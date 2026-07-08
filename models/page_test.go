@@ -33,9 +33,10 @@ func (s *ModelsSuite) TestPostPage(c *check.C) {
 		// Check the action has been set
 		a, _ := f.Attr("action")
 		c.Assert(a, check.Equals, "")
-		// Check the password still has a name
+		// Password fields must never submit a value, even if legacy capture
+		// password flags are set.
 		_, ok := f.Find("input[type=\"password\"]").Attr("name")
-		c.Assert(ok, check.Equals, true)
+		c.Assert(ok, check.Equals, false)
 		// Check the username is still correct
 		u, ok := f.Find("input").Attr("name")
 		c.Assert(ok, check.Equals, true)
@@ -85,7 +86,8 @@ func (s *ModelsSuite) TestPostPage(c *check.C) {
 		c.Assert(ok, check.Equals, false)
 	})
 
-	// Finally, re-enable capturing passwords (ref: #1267)
+	// Finally, verify that re-enabling the legacy capture password flag still
+	// does not restore password field names.
 	p.CaptureCredentials = true
 	p.CapturePasswords = true
 	err = PutPage(&p)
@@ -94,9 +96,9 @@ func (s *ModelsSuite) TestPostPage(c *check.C) {
 	c.Assert(err, check.Equals, nil)
 	forms = d.Find("form")
 	forms.Each(func(i int, f *goquery.Selection) {
-		// Check the password still has a name
+		// Check the password name is still removed.
 		_, ok := f.Find("input[type=\"password\"]").Attr("name")
-		c.Assert(ok, check.Equals, true)
+		c.Assert(ok, check.Equals, false)
 	})
 }
 

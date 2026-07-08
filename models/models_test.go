@@ -41,6 +41,7 @@ func (s *ModelsSuite) TearDownTest(c *check.C) {
 	db.Delete(MailLog{})
 	db.Delete(AuditLog{})
 	db.Delete(Campaign{})
+	db.Delete(SystemSetting{})
 
 	// Reset users table to default state.
 	db.Not("id", 1).Delete(User{})
@@ -134,6 +135,7 @@ func resetBenchmark(b *testing.B) {
 	db.Delete(MailLog{})
 	db.Delete(AuditLog{})
 	db.Delete(Campaign{})
+	db.Delete(SystemSetting{})
 
 	// Reset users table to default state.
 	db.Not("id", 1).Delete(User{})

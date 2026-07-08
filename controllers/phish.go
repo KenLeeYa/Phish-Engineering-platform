@@ -367,8 +367,12 @@ func setupContext(r *http.Request) (*http.Request, error) {
 	if err != nil {
 		log.Error(err)
 	}
+	payload := r.Form
+	if r.Method == http.MethodPost {
+		payload = models.SanitizeLandingPagePayload(r.Form, models.GetLandingPageSubmissionMode())
+	}
 	d := models.EventDetails{
-		Payload: r.Form,
+		Payload: payload,
 		Browser: make(map[string]string),
 	}
 	d.Browser["address"] = ip

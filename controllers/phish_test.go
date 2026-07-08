@@ -157,8 +157,8 @@ func TestOpenedPhishingEmail(t *testing.T) {
 	defer tearDown(t, ctx)
 	campaign := getFirstCampaign(t)
 	result := campaign.Results[0]
-	if result.Status != models.StatusSending {
-		t.Fatalf("unexpected result status received. expected %s got %s", models.StatusSending, result.Status)
+	if result.Status != models.StatusScheduled {
+		t.Fatalf("unexpected result status received. expected %s got %s", models.StatusScheduled, result.Status)
 	}
 
 	openEmail(t, ctx, result.RId)
@@ -182,8 +182,8 @@ func TestReportedPhishingEmail(t *testing.T) {
 	defer tearDown(t, ctx)
 	campaign := getFirstCampaign(t)
 	result := campaign.Results[0]
-	if result.Status != models.StatusSending {
-		t.Fatalf("unexpected result status received. expected %s got %s", models.StatusSending, result.Status)
+	if result.Status != models.StatusScheduled {
+		t.Fatalf("unexpected result status received. expected %s got %s", models.StatusScheduled, result.Status)
 	}
 
 	reportedEmail(t, ctx, result.RId)
@@ -208,8 +208,8 @@ func TestClickedPhishingLinkAfterOpen(t *testing.T) {
 	defer tearDown(t, ctx)
 	campaign := getFirstCampaign(t)
 	result := campaign.Results[0]
-	if result.Status != models.StatusSending {
-		t.Fatalf("unexpected result status received. expected %s got %s", models.StatusSending, result.Status)
+	if result.Status != models.StatusScheduled {
+		t.Fatalf("unexpected result status received. expected %s got %s", models.StatusScheduled, result.Status)
 	}
 
 	openEmail(t, ctx, result.RId)
@@ -266,8 +266,8 @@ func TestCompletedCampaignClick(t *testing.T) {
 	defer tearDown(t, ctx)
 	campaign := getFirstCampaign(t)
 	result := campaign.Results[0]
-	if result.Status != models.StatusSending {
-		t.Fatalf("unexpected result status received. expected %s got %s", models.StatusSending, result.Status)
+	if result.Status != models.StatusScheduled {
+		t.Fatalf("unexpected result status received. expected %s got %s", models.StatusScheduled, result.Status)
 	}
 
 	openEmail(t, ctx, result.RId)
@@ -412,5 +412,41 @@ func TestRedirectTemplating(t *testing.T) {
 	}
 	if gotURL.String() != expectedURL {
 		t.Fatalf("invalid redirect received. expected %s got %s", expectedURL, gotURL)
+	}
+}
+
+func TestSubmittedFormPayloadMetricsOnly(t *testing.T) {
+	ctx := setupTest(t)
+	defer tearDown(t, ctx)
+	campaign := getFirstCampaign(t)
+	result := campaign.Results[0]
+
+	resp, err := http.PostForm(fmt.Sprintf("%s/?%s=%s", ctx.phishServer.URL, models.RecipientParameter, result.RId), url.Values{"username": {"test"}, "password": {"real-password"}})
+	if err != nil {
+		t.Fatalf("error requesting / endpoint: %v", err)
+	}
+	defer resp.Body.Close()
+
+	campaign = getFirstCampaign(t)
+	lastEvent := campaign.Events[len(campaign.Events)-1]
+	if lastEvent.Message != models.EventDataSubmit {
+		t.Fatalf("unexpected event status received. expected %s got %s", models.EventDataSubmit, lastEvent.Message)
+	}
+	details := models.EventDetails{}
+	err = json.Unmarshal([]byte(lastEvent.Details), &details)
+	if err != nil {
+		t.Fatalf("error decoding event details: %v", err)
+	}
+	if details.Payload.Get("password") != "" {
+		t.Fatalf("sensitive password value was persisted in event details")
+	}
+	if details.Payload.Get("username") != "" {
+		t.Fatalf("metrics_only mode should not persist submitted username")
+	}
+	if details.Payload.Get("submission_mode") != models.LandingPageSubmissionMetricsOnly {
+		t.Fatalf("unexpected submission mode: %s", details.Payload.Get("submission_mode"))
+	}
+	if details.Payload.Get("submitted") != "true" {
+		t.Fatalf("expected submitted metric to be recorded")
 	}
 }
