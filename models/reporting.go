@@ -16,34 +16,34 @@ const (
 )
 
 type TrainingRiskWeights struct {
-	ClickedLink                   int `json:"clicked_link"`
-	SubmittedSimulatedForm        int `json:"submitted_simulated_form"`
-	IncompleteAssignedTraining    int `json:"incomplete_assigned_training"`
-	RepeatedRiskyBehavior         int `json:"repeated_risky_behavior"`
-	ReportedSuspiciousEmail       int `json:"reported_suspicious_email"`
-	CompletedTraining             int `json:"completed_training"`
+	ClickedLink                int `json:"clicked_link"`
+	SubmittedSimulatedForm     int `json:"submitted_simulated_form"`
+	IncompleteAssignedTraining int `json:"incomplete_assigned_training"`
+	RepeatedRiskyBehavior      int `json:"repeated_risky_behavior"`
+	ReportedSuspiciousEmail    int `json:"reported_suspicious_email"`
+	CompletedTraining          int `json:"completed_training"`
 }
 
 type EnterpriseReportSummary struct {
-	CampaignId            int64  `json:"campaign_id"`
-	TotalRecipients       int64  `json:"total_recipients"`
-	SentCount             int64  `json:"sent_count"`
-	DeliveredCount        int64  `json:"delivered_count"`
-	OpenedCount           int64  `json:"opened_count"`
-	ClickedCount          int64  `json:"clicked_count"`
-	SubmittedFormCount    int64  `json:"submitted_simulated_form_count"`
-	ReportedCount         int64  `json:"reported_suspicious_email_count"`
-	BouncedCount          int64  `json:"bounced_count"`
-	DeferredCount         int64  `json:"deferred_count"`
-	FailedCount           int64  `json:"failed_count"`
-	SuppressedCount       int64  `json:"suppressed_count"`
-	TrainingAssignedCount int64  `json:"training_assigned_count"`
-	TrainingCompletedCount int64 `json:"training_completed_count"`
-	RepeatRiskCount       int64  `json:"repeat_risk_count"`
-	TrainingRiskIndicator int    `json:"training_risk_indicator"`
-	TrainingRiskLevel     string `json:"training_risk_level"`
-	PrivacyProtected      bool   `json:"privacy_protected"`
-	PrivacyMessage        string `json:"privacy_message,omitempty"`
+	CampaignId             int64  `json:"campaign_id"`
+	TotalRecipients        int64  `json:"total_recipients"`
+	SentCount              int64  `json:"sent_count"`
+	DeliveredCount         int64  `json:"delivered_count"`
+	OpenedCount            int64  `json:"opened_count"`
+	ClickedCount           int64  `json:"clicked_count"`
+	SubmittedFormCount     int64  `json:"submitted_simulated_form_count"`
+	ReportedCount          int64  `json:"reported_suspicious_email_count"`
+	BouncedCount           int64  `json:"bounced_count"`
+	DeferredCount          int64  `json:"deferred_count"`
+	FailedCount            int64  `json:"failed_count"`
+	SuppressedCount        int64  `json:"suppressed_count"`
+	TrainingAssignedCount  int64  `json:"training_assigned_count"`
+	TrainingCompletedCount int64  `json:"training_completed_count"`
+	RepeatRiskCount        int64  `json:"repeat_risk_count"`
+	TrainingRiskIndicator  int    `json:"training_risk_indicator"`
+	TrainingRiskLevel      string `json:"training_risk_level"`
+	PrivacyProtected       bool   `json:"privacy_protected"`
+	PrivacyMessage         string `json:"privacy_message,omitempty"`
 }
 
 func DefaultTrainingRiskWeights() TrainingRiskWeights {

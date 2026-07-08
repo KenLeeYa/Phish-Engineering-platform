@@ -153,12 +153,14 @@ func (s *ModelsSuite) TestCampaignApprovalLifecycle(c *check.C) {
 
 func (s *ModelsSuite) TestCampaignLaunchRequiresApprovedSendingProfile(c *check.C) {
 	campaign := s.createCampaignDependencies(c)
-	campaign.SMTP = SMTP{
+	smtp := SMTP{
 		Name:        "Unapproved SMTP",
 		UserId:      campaign.UserId,
 		Host:        "example.com",
 		FromAddress: "test@test.com",
 	}
+	c.Assert(PostSMTP(&smtp), check.Equals, nil)
+	campaign.SMTP = smtp
 	c.Assert(PostCampaign(&campaign, campaign.UserId), check.Equals, nil)
 	c.Assert(SubmitCampaignForApproval(campaign.Id, campaign.UserId), check.Equals, nil)
 	c.Assert(ApproveCampaign(campaign.Id, campaign.UserId, int64(1), "approved"), check.Equals, nil)

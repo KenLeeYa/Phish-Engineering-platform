@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/gophish/gophish/models"
 )
@@ -42,17 +43,18 @@ func createApprovalCampaign(t *testing.T) models.Campaign {
 	if err := models.PostPage(&page); err != nil {
 		t.Fatalf("error posting page: %v", err)
 	}
-	smtp := models.SMTP{Name: "Approval Test SMTP", Host: "example.com", FromAddress: "test@test.com", UserId: 1}
+	smtp := models.SMTP{Name: "Approval Test SMTP", Host: "example.com", FromAddress: "test@test.com", UserId: 1, ApprovedForUse: true}
 	if err := models.PostSMTP(&smtp); err != nil {
 		t.Fatalf("error posting smtp: %v", err)
 	}
 	campaign := models.Campaign{
-		Name:     "Approval Test Campaign",
-		UserId:   1,
-		Template: template,
-		Page:     page,
-		SMTP:     smtp,
-		Groups:   []models.Group{group},
+		Name:       "Approval Test Campaign",
+		UserId:     1,
+		Template:   template,
+		Page:       page,
+		SMTP:       smtp,
+		Groups:     []models.Group{group},
+		LaunchDate: time.Now().UTC().Add(-time.Minute),
 	}
 	if err := models.PostCampaign(&campaign, campaign.UserId); err != nil {
 		t.Fatalf("error posting campaign: %v", err)

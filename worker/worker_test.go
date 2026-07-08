@@ -110,7 +110,7 @@ func setupCampaign(id int) (*models.Campaign, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = c.UpdateStatus(models.CampaignEmailsSent)
+	err = c.UpdateStatus(models.CampaignInProgress)
 	return &c, err
 }
 

@@ -135,7 +135,15 @@ func (u *User) roleID() int64 {
 // GetPermissions returns the permissions associated with the user's role.
 func (u *User) GetPermissions() ([]Permission, error) {
 	perm := []Permission{}
-	err := db.Model(Role{ID: u.roleID()}).Association("Permissions").Find(&perm).Error
+	roleID := u.roleID()
+	if roleID == 0 {
+		role, err := GetRoleBySlug(RoleUser)
+		if err != nil {
+			return perm, err
+		}
+		roleID = role.ID
+	}
+	err := db.Model(Role{ID: roleID}).Association("Permissions").Find(&perm).Error
 	return perm, err
 }
 

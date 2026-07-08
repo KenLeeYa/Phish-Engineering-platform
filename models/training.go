@@ -81,8 +81,8 @@ type QuizQuestion struct {
 }
 
 type QuizAnswer struct {
-	Id             int64     `json:"id"`
-	QuestionId     int64     `json:"question_id"`
+	Id              int64     `json:"id"`
+	QuestionId      int64     `json:"question_id"`
 	AnswerText      string    `json:"answer_text"`
 	IsCorrect       bool      `json:"is_correct"`
 	ExplanationText string    `json:"explanation_text"`
@@ -106,15 +106,15 @@ type TrainingAssignment struct {
 }
 
 type TrainingCompletion struct {
-	Id             int64     `json:"id"`
-	AssignmentId   int64     `json:"assignment_id"`
-	ModuleId       int64     `json:"module_id"`
-	RId            string    `json:"recipient_result_id"`
-	Score          int       `json:"score"`
-	Passed         bool      `json:"passed"`
-	AttemptsCount  int       `json:"attempts_count"`
-	CompletedAt    time.Time `json:"completed_at"`
-	CompletionSource string  `json:"completion_source"`
+	Id               int64     `json:"id"`
+	AssignmentId     int64     `json:"assignment_id"`
+	ModuleId         int64     `json:"module_id"`
+	RId              string    `json:"recipient_result_id"`
+	Score            int       `json:"score"`
+	Passed           bool      `json:"passed"`
+	AttemptsCount    int       `json:"attempts_count"`
+	CompletedAt      time.Time `json:"completed_at"`
+	CompletionSource string    `json:"completion_source"`
 }
 
 type TrainingFeedback struct {
