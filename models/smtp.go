@@ -43,6 +43,10 @@ type SMTP struct {
 	IgnoreCertErrors bool      `json:"ignore_cert_errors"`
 	Headers          []Header  `json:"headers"`
 	ModifiedDate     time.Time `json:"modified_date"`
+	ApprovedForUse   bool      `json:"approved_for_use"`
+	ReviewerId       int64     `json:"reviewer_id"`
+	ReviewedAt       time.Time `json:"reviewed_at"`
+	ReviewNotes      string    `json:"review_notes"`
 }
 
 // Header contains the fields and methods for a sending profile to have

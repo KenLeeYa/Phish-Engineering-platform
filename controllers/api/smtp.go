@@ -21,7 +21,7 @@ func (as *Server) SendingProfiles(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			log.Error(err)
 		}
-		JSONResponse(w, ss, http.StatusOK)
+		JSONResponse(w, models.SanitizeSMTPsForResponse(ss), http.StatusOK)
 	//POST: Create a new SMTP and return it as JSON
 	case r.Method == "POST":
 		s := models.SMTP{}
@@ -45,7 +45,7 @@ func (as *Server) SendingProfiles(w http.ResponseWriter, r *http.Request) {
 			JSONResponse(w, models.Response{Success: false, Message: err.Error()}, http.StatusInternalServerError)
 			return
 		}
-		JSONResponse(w, s, http.StatusCreated)
+		JSONResponse(w, models.SanitizeSMTPForResponse(s), http.StatusCreated)
 	}
 }
 
@@ -61,7 +61,7 @@ func (as *Server) SendingProfile(w http.ResponseWriter, r *http.Request) {
 	}
 	switch {
 	case r.Method == "GET":
-		JSONResponse(w, s, http.StatusOK)
+		JSONResponse(w, models.SanitizeSMTPForResponse(s), http.StatusOK)
 	case r.Method == "DELETE":
 		err = models.DeleteSMTP(id, ctx.Get(r, "user_id").(int64))
 		if err != nil {
@@ -91,6 +91,6 @@ func (as *Server) SendingProfile(w http.ResponseWriter, r *http.Request) {
 			JSONResponse(w, models.Response{Success: false, Message: "Error updating page"}, http.StatusInternalServerError)
 			return
 		}
-		JSONResponse(w, s, http.StatusOK)
+		JSONResponse(w, models.SanitizeSMTPForResponse(s), http.StatusOK)
 	}
 }

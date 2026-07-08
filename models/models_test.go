@@ -36,6 +36,7 @@ func (s *ModelsSuite) TearDownTest(c *check.C) {
 	db.Delete(Target{})
 	db.Delete(GroupTarget{})
 	db.Delete(SMTP{})
+	db.Delete(SuppressedRecipient{})
 	db.Delete(Page{})
 	db.Delete(Result{})
 	db.Delete(MailLog{})
@@ -84,6 +85,7 @@ func (s *ModelsSuite) createCampaignDependencies(ch *check.C, optional ...string
 	smtp.UserId = 1
 	smtp.Host = "example.com"
 	smtp.FromAddress = "test@test.com"
+	smtp.ApprovedForUse = true
 	ch.Assert(PostSMTP(&smtp), check.Equals, nil)
 
 	c := Campaign{Name: "Test campaign"}
@@ -131,6 +133,7 @@ func resetBenchmark(b *testing.B) {
 	db.Delete(Target{})
 	db.Delete(GroupTarget{})
 	db.Delete(SMTP{})
+	db.Delete(SuppressedRecipient{})
 	db.Delete(Page{})
 	db.Delete(Result{})
 	db.Delete(MailLog{})

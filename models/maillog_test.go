@@ -38,6 +38,11 @@ func (s *ModelsSuite) emailFromFirstMailLog(campaign Campaign, ch *check.C) *ema
 
 func (s *ModelsSuite) TestGetQueuedMailLogs(ch *check.C) {
 	campaign := s.createCampaign(ch)
+	ch.Assert(SubmitCampaignForApproval(campaign.Id, campaign.UserId), check.Equals, nil)
+	ch.Assert(ApproveCampaign(campaign.Id, campaign.UserId, int64(1), "approved"), check.Equals, nil)
+	var err error
+	campaign, err = LaunchApprovedCampaign(campaign.Id, campaign.UserId)
+	ch.Assert(err, check.Equals, nil)
 	// By default, for campaigns with no launch date, the maillogs are set as
 	// being processed. We need to unlock them first.
 	ms, err := GetMailLogsByCampaign(campaign.Id)
@@ -61,6 +66,59 @@ func (s *ModelsSuite) TestGetQueuedMailLogs(ch *check.C) {
 			ch.Fatalf("Result not found in maillogs: %s", r.RId)
 		}
 	}
+}
+
+func (s *ModelsSuite) TestSuppressedRecipientNotReturnedFromQueue(ch *check.C) {
+	campaign := s.createCampaign(ch)
+	ch.Assert(SubmitCampaignForApproval(campaign.Id, campaign.UserId), check.Equals, nil)
+	ch.Assert(ApproveCampaign(campaign.Id, campaign.UserId, int64(1), "approved"), check.Equals, nil)
+	campaign, err := LaunchApprovedCampaign(campaign.Id, campaign.UserId)
+	ch.Assert(err, check.Equals, nil)
+
+	ms, err := GetMailLogsByCampaign(campaign.Id)
+	ch.Assert(err, check.Equals, nil)
+	ch.Assert(LockMailLogs(ms, false), check.Equals, nil)
+	suppressed := campaign.Results[0]
+	ch.Assert(AddSuppressedRecipient(&SuppressedRecipient{
+		UserId:    campaign.UserId,
+		Email:     suppressed.Email,
+		Reason:    SuppressionReasonManual,
+		CreatedBy: int64(1),
+	}), check.Equals, nil)
+
+	queued, err := GetQueuedMailLogs(campaign.LaunchDate.Add(time.Minute))
+	ch.Assert(err, check.Equals, nil)
+	for _, m := range queued {
+		ch.Assert(m.RId, check.Not(check.Equals), suppressed.RId)
+	}
+	statuses, err := GetDeliveryStatusesByCampaign(campaign.Id, campaign.UserId)
+	ch.Assert(err, check.Equals, nil)
+	foundSuppressed := false
+	for _, status := range statuses {
+		if status.RId == suppressed.RId {
+			foundSuppressed = true
+			ch.Assert(status.Status, check.Equals, DeliveryStatusSuppressed)
+		}
+	}
+	ch.Assert(foundSuppressed, check.Equals, true)
+}
+
+func (s *ModelsSuite) TestEmergencyStopReturnsNoQueuedMailLogs(ch *check.C) {
+	campaign := s.createCampaign(ch)
+	ch.Assert(SubmitCampaignForApproval(campaign.Id, campaign.UserId), check.Equals, nil)
+	ch.Assert(ApproveCampaign(campaign.Id, campaign.UserId, int64(1), "approved"), check.Equals, nil)
+	_, err := LaunchApprovedCampaign(campaign.Id, campaign.UserId)
+	ch.Assert(err, check.Equals, nil)
+
+	ms, err := GetMailLogsByCampaign(campaign.Id)
+	ch.Assert(err, check.Equals, nil)
+	ch.Assert(LockMailLogs(ms, false), check.Equals, nil)
+	ch.Assert(PutSystemSetting(SettingMailEmergencyStop, "true"), check.Equals, nil)
+	defer PutSystemSetting(SettingMailEmergencyStop, "false")
+
+	queued, err := GetQueuedMailLogs(campaign.LaunchDate.Add(time.Minute))
+	ch.Assert(err, check.Equals, nil)
+	ch.Assert(len(queued), check.Equals, 0)
 }
 
 func (s *ModelsSuite) TestMailLogBackoff(ch *check.C) {

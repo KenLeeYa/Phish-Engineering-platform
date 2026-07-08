@@ -145,6 +145,10 @@ var ErrCampaignRejectReasonRequired = errors.New("Rejection reason required")
 // ErrCampaignApprovalRequired indicates that launch requires approval first.
 var ErrCampaignApprovalRequired = errors.New("Campaign must be approved before launch")
 
+// ErrSendingProfileApprovalRequired indicates that launch requires an approved
+// sending profile.
+var ErrSendingProfileApprovalRequired = errors.New("Sending profile must be approved before campaign launch")
+
 const (
 	DefaultAuthorizationScope = "authorized_internal_training"
 	DefaultRetentionPolicy    = "default_retention_policy"
@@ -242,6 +246,9 @@ func LaunchApprovedCampaign(id int64, uid int64) (Campaign, error) {
 	}
 	if c.Status != CampaignApproved {
 		return c, ErrCampaignApprovalRequired
+	}
+	if !c.SMTP.ApprovedForUse {
+		return c, ErrSendingProfileApprovalRequired
 	}
 	now := time.Now().UTC()
 	nextStatus := CampaignQueued

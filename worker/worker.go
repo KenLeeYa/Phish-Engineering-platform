@@ -127,6 +127,11 @@ func (w *DefaultWorker) LaunchCampaign(c models.Campaign) {
 		log.Error(err)
 		return
 	}
+	ms, err = models.FilterSendableMailLogs(ms)
+	if err != nil {
+		log.Error(err)
+		return
+	}
 	models.LockMailLogs(ms, true)
 	// This is required since you cannot pass a slice of values
 	// that implements an interface as a slice of that interface.

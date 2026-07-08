@@ -275,7 +275,10 @@ func GetQueuedMailLogs(t time.Time) ([]*MailLog, error) {
 	if err != nil {
 		log.Warn(err)
 	}
-	return ms, err
+	if err != nil {
+		return ms, err
+	}
+	return FilterSendableMailLogs(ms)
 }
 
 // GetMailLogsByCampaign returns all of the mail logs for a given campaign.

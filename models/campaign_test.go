@@ -151,6 +151,22 @@ func (s *ModelsSuite) TestCampaignApprovalLifecycle(c *check.C) {
 	c.Assert(campaign.Status, check.Equals, CampaignInProgress)
 }
 
+func (s *ModelsSuite) TestCampaignLaunchRequiresApprovedSendingProfile(c *check.C) {
+	campaign := s.createCampaignDependencies(c)
+	campaign.SMTP = SMTP{
+		Name:        "Unapproved SMTP",
+		UserId:      campaign.UserId,
+		Host:        "example.com",
+		FromAddress: "test@test.com",
+	}
+	c.Assert(PostCampaign(&campaign, campaign.UserId), check.Equals, nil)
+	c.Assert(SubmitCampaignForApproval(campaign.Id, campaign.UserId), check.Equals, nil)
+	c.Assert(ApproveCampaign(campaign.Id, campaign.UserId, int64(1), "approved"), check.Equals, nil)
+
+	_, err := LaunchApprovedCampaign(campaign.Id, campaign.UserId)
+	c.Assert(err, check.Equals, ErrSendingProfileApprovalRequired)
+}
+
 func (s *ModelsSuite) TestRejectCampaignRequiresReason(c *check.C) {
 	campaign := s.createCampaignDependencies(c)
 	c.Assert(PostCampaign(&campaign, campaign.UserId), check.Equals, nil)

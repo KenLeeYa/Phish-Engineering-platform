@@ -22,6 +22,19 @@ func (s *ModelsSuite) TestPostSMTP(c *check.C) {
 	c.Assert(len(ss), check.Equals, 1)
 }
 
+func (s *ModelsSuite) TestSanitizeSMTPForResponseMasksPassword(c *check.C) {
+	smtp := SMTP{
+		Name:        "Test SMTP",
+		Host:        "1.1.1.1:25",
+		FromAddress: "foo@example.com",
+		UserId:      1,
+		Password:    "super-secret",
+	}
+	safe := SanitizeSMTPForResponse(smtp)
+	c.Assert(safe.Password, check.Equals, MaskedSecretValue)
+	c.Assert(smtp.Password, check.Equals, "super-secret")
+}
+
 func (s *ModelsSuite) TestPostSMTPNoHost(c *check.C) {
 	smtp := SMTP{
 		Name:        "Test SMTP",
