@@ -20,9 +20,19 @@ type User struct {
 	ApiKey                 string    `json:"api_key" sql:"not null;unique"`
 	Role                   Role      `json:"role" gorm:"association_autoupdate:false;association_autocreate:false"`
 	RoleID                 int64     `json:"-"`
+	Permissions            []string  `json:"permissions,omitempty" gorm:"-"`
 	PasswordChangeRequired bool      `json:"password_change_required"`
 	AccountLocked          bool      `json:"account_locked"`
 	LastLogin              time.Time `json:"last_login"`
+}
+
+func hydrateUserPermissions(u *User) error {
+	permissions, err := u.GetPermissionSlugs()
+	if err != nil {
+		return err
+	}
+	u.Permissions = permissions
+	return nil
 }
 
 // GetUser returns the user that the given id corresponds to. If no user is found, an
@@ -30,6 +40,10 @@ type User struct {
 func GetUser(id int64) (User, error) {
 	u := User{}
 	err := db.Preload("Role").Where("id=?", id).First(&u).Error
+	if err != nil {
+		return u, err
+	}
+	err = hydrateUserPermissions(&u)
 	return u, err
 }
 
@@ -37,6 +51,15 @@ func GetUser(id int64) (User, error) {
 func GetUsers() ([]User, error) {
 	us := []User{}
 	err := db.Preload("Role").Find(&us).Error
+	if err != nil {
+		return us, err
+	}
+	for i := range us {
+		err = hydrateUserPermissions(&us[i])
+		if err != nil {
+			return us, err
+		}
+	}
 	return us, err
 }
 
@@ -45,6 +68,10 @@ func GetUsers() ([]User, error) {
 func GetUserByAPIKey(key string) (User, error) {
 	u := User{}
 	err := db.Preload("Role").Where("api_key = ?", key).First(&u).Error
+	if err != nil {
+		return u, err
+	}
+	err = hydrateUserPermissions(&u)
 	return u, err
 }
 
@@ -53,6 +80,10 @@ func GetUserByAPIKey(key string) (User, error) {
 func GetUserByUsername(username string) (User, error) {
 	u := User{}
 	err := db.Preload("Role").Where("username = ?", username).First(&u).Error
+	if err != nil {
+		return u, err
+	}
+	err = hydrateUserPermissions(&u)
 	return u, err
 }
 

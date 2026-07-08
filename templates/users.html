@@ -74,8 +74,14 @@
                 <label class="control-label" for="role">{{t "user.role"}}</label>
                 <div class="form-group" id="role-select">
                     <select class="form-control" placeholder="" id="role" />
-                    <option value="admin">Admin</option>
-                    <option value="user">User</option>
+                    <option value="system_admin">{{t "role.system_admin"}}</option>
+                    <option value="security_manager">{{t "role.security_manager"}}</option>
+                    <option value="campaign_creator">{{t "role.campaign_creator"}}</option>
+                    <option value="approver">{{t "role.approver"}}</option>
+                    <option value="reporter">{{t "role.reporter"}}</option>
+                    <option value="department_manager">{{t "role.department_manager"}}</option>
+                    <option value="auditor">{{t "role.auditor"}}</option>
+                    <option value="user">{{t "role.user"}}</option>
                     </select>
                 </div>
             </div>

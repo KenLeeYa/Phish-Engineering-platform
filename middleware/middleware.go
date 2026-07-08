@@ -159,10 +159,17 @@ func EnforceViewOnly(next http.Handler) http.Handler {
 // before executing the handler. If the request is unauthorized, a JSONError
 // is returned.
 func RequirePermission(perm string) func(http.Handler) http.HandlerFunc {
+	return RequireAnyPermission(perm)
+}
+
+// RequireAnyPermission checks to see if the user has at least one of the
+// requested permissions before executing the handler. If the request is
+// unauthorized, a JSONError is returned.
+func RequireAnyPermission(perms ...string) func(http.Handler) http.HandlerFunc {
 	return func(next http.Handler) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			user := ctx.Get(r, "user").(models.User)
-			access, err := user.HasPermission(perm)
+			access, err := user.HasAnyPermission(perms...)
 			if err != nil {
 				JSONError(w, http.StatusInternalServerError, err.Error())
 				return

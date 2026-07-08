@@ -33,6 +33,15 @@ func createUnpriviledgedUser(t *testing.T, slug string) *models.User {
 	return unauthorizedUser
 }
 
+func hasPermissionSlug(slugs []string, target string) bool {
+	for _, slug := range slugs {
+		if slug == target {
+			return true
+		}
+	}
+	return false
+}
+
 func TestGetUsers(t *testing.T) {
 	testCtx := setupTest(t)
 	r := httptest.NewRequest(http.MethodGet, "/api/users", nil)
@@ -59,6 +68,12 @@ func TestGetUsers(t *testing.T) {
 	// And it should be the admin user
 	if testCtx.admin.Id != got[0].Id {
 		t.Fatalf("unexpected user received. expected %d got %d", testCtx.admin.Id, got[0].Id)
+	}
+	if got[0].Role.Slug != models.RoleAdmin {
+		t.Fatalf("unexpected role received. expected %s got %s", models.RoleAdmin, got[0].Role.Slug)
+	}
+	if !hasPermissionSlug(got[0].Permissions, models.PermissionManageUsers) {
+		t.Fatalf("expected admin user permissions to include %s", models.PermissionManageUsers)
 	}
 }
 
@@ -146,12 +161,12 @@ func TestModifyUser(t *testing.T) {
 	}
 }
 
-// TestUnauthorizedListUsers ensures that users without the ModifySystem
+// TestUnauthorizedListUsers ensures that users without the ManageUsers
 // permission are unable to list the users registered in Gophish.
 func TestUnauthorizedListUsers(t *testing.T) {
 	testCtx := setupTest(t)
 	// First, let's create a standard user which doesn't
-	// have ModifySystem permissions.
+	// have ManageUsers permissions.
 	unauthorizedUser := createUnpriviledgedUser(t, models.RoleUser)
 	// We'll try to make a request to the various users API endpoints to
 	// ensure that they fail. Previously, we could hit the handlers directly
@@ -168,7 +183,7 @@ func TestUnauthorizedListUsers(t *testing.T) {
 	}
 }
 
-// TestUnauthorizedModifyUsers verifies that users without ModifySystem
+// TestUnauthorizedModifyUsers verifies that users without ManageUsers
 // permission (a "standard" user) can only get or modify their own information.
 func TestUnauthorizedGetUser(t *testing.T) {
 	testCtx := setupTest(t)
@@ -187,7 +202,7 @@ func TestUnauthorizedGetUser(t *testing.T) {
 	}
 }
 
-// TestUnauthorizedModifyRole ensures that users without the ModifySystem
+// TestUnauthorizedModifyRole ensures that users without the ManageUsers
 // privilege are unable to modify their own role, preventing a potential
 // privilege escalation issue.
 func TestUnauthorizedSetRole(t *testing.T) {

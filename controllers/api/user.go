@@ -64,7 +64,7 @@ func (ur *userRequest) Validate(existingUser *models.User) error {
 }
 
 // Users contains functions to retrieve a list of existing users or create a
-// new user. Users with the ModifySystem permissions can view and create users.
+// new user. Users with the ManageUsers permission can view and create users.
 func (as *Server) Users(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case r.Method == "GET":
@@ -116,26 +116,31 @@ func (as *Server) Users(w http.ResponseWriter, r *http.Request) {
 			JSONResponse(w, models.Response{Success: false, Message: err.Error()}, http.StatusInternalServerError)
 			return
 		}
+		user.Permissions, err = user.GetPermissionSlugs()
+		if err != nil {
+			JSONResponse(w, models.Response{Success: false, Message: err.Error()}, http.StatusInternalServerError)
+			return
+		}
 		JSONResponse(w, user, http.StatusOK)
 		return
 	}
 }
 
 // User contains functions to retrieve or delete a single user. Users with
-// the ModifySystem permission can view and modify any user. Otherwise, users
+// the ManageUsers permission can view and modify any user. Otherwise, users
 // may only view or delete their own account.
 func (as *Server) User(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, _ := strconv.ParseInt(vars["id"], 0, 64)
-	// If the user doesn't have ModifySystem permissions, we need to verify
+	// If the user doesn't have ManageUsers permissions, we need to verify
 	// that they're only taking action on their account.
 	currentUser := ctx.Get(r, "user").(models.User)
-	hasSystem, err := currentUser.HasPermission(models.PermissionModifySystem)
+	canManageUsers, err := currentUser.HasPermission(models.PermissionManageUsers)
 	if err != nil {
 		JSONResponse(w, models.Response{Success: false, Message: err.Error()}, http.StatusInternalServerError)
 		return
 	}
-	if !hasSystem && currentUser.Id != id {
+	if !canManageUsers && currentUser.Id != id {
 		JSONResponse(w, models.Response{Success: false, Message: http.StatusText(http.StatusForbidden)}, http.StatusForbidden)
 		return
 	}
@@ -170,10 +175,10 @@ func (as *Server) User(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		existingUser.Username = ur.Username
-		// Only users with the ModifySystem permission are able to update a
+		// Only users with the ManageUsers permission are able to update a
 		// user's role. This prevents a privilege escalation letting users
 		// upgrade their own account.
-		if !hasSystem && ur.Role != existingUser.Role.Slug {
+		if !canManageUsers && ur.Role != existingUser.Role.Slug {
 			JSONResponse(w, models.Response{Success: false, Message: ErrInsufficientPermission.Error()}, http.StatusBadRequest)
 			return
 		}
@@ -218,6 +223,11 @@ func (as *Server) User(w http.ResponseWriter, r *http.Request) {
 		}
 		existingUser.AccountLocked = ur.AccountLocked
 		err = models.PutUser(&existingUser)
+		if err != nil {
+			JSONResponse(w, models.Response{Success: false, Message: err.Error()}, http.StatusInternalServerError)
+			return
+		}
+		existingUser.Permissions, err = existingUser.GetPermissionSlugs()
 		if err != nil {
 			JSONResponse(w, models.Response{Success: false, Message: err.Error()}, http.StatusInternalServerError)
 			return

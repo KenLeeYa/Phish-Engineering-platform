@@ -77,15 +77,15 @@ func (as *Server) registerRoutes() {
 	router.HandleFunc("/pages/{id:[0-9]+}", as.Page)
 	router.HandleFunc("/smtp/", as.SendingProfiles)
 	router.HandleFunc("/smtp/{id:[0-9]+}", as.SendingProfile)
-	router.HandleFunc("/users/", mid.Use(as.Users, mid.RequirePermission(models.PermissionModifySystem)))
+	router.HandleFunc("/users/", mid.Use(as.Users, mid.RequirePermission(models.PermissionManageUsers)))
 	router.HandleFunc("/users/{id:[0-9]+}", mid.Use(as.User))
 	router.HandleFunc("/util/send_test_email", as.SendTestEmail)
 	router.HandleFunc("/import/group", as.ImportGroup)
 	router.HandleFunc("/import/email", as.ImportEmail)
 	router.HandleFunc("/import/site", as.ImportSite)
-	router.HandleFunc("/webhooks/", mid.Use(as.Webhooks, mid.RequirePermission(models.PermissionModifySystem)))
-	router.HandleFunc("/webhooks/{id:[0-9]+}/validate", mid.Use(as.ValidateWebhook, mid.RequirePermission(models.PermissionModifySystem)))
-	router.HandleFunc("/webhooks/{id:[0-9]+}", mid.Use(as.Webhook, mid.RequirePermission(models.PermissionModifySystem)))
+	router.HandleFunc("/webhooks/", mid.Use(as.Webhooks, mid.RequirePermission(models.PermissionManageWebhooks)))
+	router.HandleFunc("/webhooks/{id:[0-9]+}/validate", mid.Use(as.ValidateWebhook, mid.RequirePermission(models.PermissionManageWebhooks)))
+	router.HandleFunc("/webhooks/{id:[0-9]+}", mid.Use(as.Webhook, mid.RequirePermission(models.PermissionManageWebhooks)))
 	as.handler = router
 }
 

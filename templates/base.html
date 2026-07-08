@@ -21,7 +21,12 @@
         {{if .User}}
     var user = {
         api_key : {{ .User.ApiKey }},
-        username : {{ .User.Username }}
+        username : {{ .User.Username }},
+        role : {
+            slug : {{ .User.Role.Slug }},
+            name : {{ .User.Role.Name }}
+        },
+        permissions : [{{range $index, $permission := .User.Permissions}}{{if $index}}, {{end}}{{printf "%q" $permission}}{{end}}]
     }
     {{end}}
     {{if .Token}}

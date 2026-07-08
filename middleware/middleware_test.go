@@ -119,6 +119,36 @@ func TestRequirePermission(t *testing.T) {
 	}
 }
 
+func TestRequireEnterprisePermission(t *testing.T) {
+	setupTest(t)
+	middleware := RequirePermission(models.PermissionManageWebhooks)
+	handler := middleware(successHandler)
+
+	permissionTests := map[string]int{
+		models.RoleReporter:        http.StatusForbidden,
+		models.RoleSecurityManager: http.StatusOK,
+		models.RoleAdmin:           http.StatusOK,
+	}
+
+	for role, expected := range permissionTests {
+		req := httptest.NewRequest(http.MethodGet, "/", nil)
+		response := httptest.NewRecorder()
+		role, err := models.GetRoleBySlug(role)
+		if err != nil {
+			t.Fatalf("error getting role by slug: %v", err)
+		}
+		req = ctx.Set(req, "user", models.User{
+			Role:   role,
+			RoleID: role.ID,
+		})
+		handler.ServeHTTP(response, req)
+		got := response.Code
+		if got != expected {
+			t.Fatalf("incorrect status code received. expected %d got %d", expected, got)
+		}
+	}
+}
+
 func TestRequireAPIKey(t *testing.T) {
 	setupTest(t)
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
