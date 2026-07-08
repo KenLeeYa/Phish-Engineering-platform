@@ -1,0 +1,23 @@
+services:
+  gophish:
+    build: .
+    image: cn-security-awareness-platform:local
+    restart: unless-stopped
+    ports:
+      - "3333:3333"
+      - "8080:8080"
+    volumes:
+      - gophish-data:/opt/gophish/data
+      - ./config.production.example.json:/opt/gophish/config.json:ro
+    environment:
+      GOPHISH_INITIAL_ADMIN_PASSWORD: "replace-with-secret-manager-reference"
+    read_only: false
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+
+volumes:
+  gophish-data:

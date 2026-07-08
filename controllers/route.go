@@ -123,6 +123,8 @@ func (as *AdminServer) Shutdown() error {
 // This function returns an http.Handler to be used in http.ListenAndServe().
 func (as *AdminServer) registerRoutes() {
 	router := mux.NewRouter()
+	router.HandleFunc("/healthz", as.Healthz)
+	router.HandleFunc("/readyz", as.Readyz)
 	// Base Front-end routes
 	router.HandleFunc("/", mid.Use(as.Base, mid.RequireLogin))
 	router.HandleFunc("/login", mid.Use(as.Login, as.limiter.Limit))

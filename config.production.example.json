@@ -1,0 +1,26 @@
+{
+  "admin_server": {
+    "listen_url": "0.0.0.0:3333",
+    "use_tls": true,
+    "cert_path": "/run/secrets/admin_tls_cert",
+    "key_path": "/run/secrets/admin_tls_key",
+    "csrf_key": "replace-with-secret-reference",
+    "allowed_internal_hosts": [],
+    "trusted_origins": ["https://security-awareness.example.com"]
+  },
+  "phish_server": {
+    "listen_url": "0.0.0.0:8080",
+    "use_tls": true,
+    "cert_path": "/run/secrets/training_tls_cert",
+    "key_path": "/run/secrets/training_tls_key"
+  },
+  "db_name": "sqlite3",
+  "db_path": "data/gophish.db",
+  "db_sslca_path": "",
+  "migrations_prefix": "db/db_",
+  "contact_address": "security-awareness@example.com",
+  "logging": {
+    "filename": "",
+    "level": "info"
+  }
+}
