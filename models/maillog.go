@@ -266,7 +266,11 @@ func (m *MailLog) Generate(msg *gomail.Message) error {
 // GetQueuedMailLogs returns the mail logs that are queued up for the given minute.
 func GetQueuedMailLogs(t time.Time) ([]*MailLog, error) {
 	ms := []*MailLog{}
-	err := db.Where("send_date <= ? AND processing = ?", t, false).
+	err := db.Table("mail_logs").
+		Select("mail_logs.*").
+		Joins("JOIN campaigns ON campaigns.id = mail_logs.campaign_id").
+		Where("mail_logs.send_date <= ? AND mail_logs.processing = ?", t, false).
+		Where("campaigns.status IN (?)", []string{CampaignQueued, CampaignInProgress}).
 		Find(&ms).Error
 	if err != nil {
 		log.Warn(err)

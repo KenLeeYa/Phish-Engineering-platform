@@ -117,6 +117,53 @@ func (s *ModelsSuite) TestLaunchCampaignMaillogStatus(c *check.C) {
 	}
 }
 
+func (s *ModelsSuite) TestCampaignApprovalLifecycle(c *check.C) {
+	campaign := s.createCampaignDependencies(c)
+	err := PostCampaign(&campaign, campaign.UserId)
+	c.Assert(err, check.Equals, nil)
+	c.Assert(campaign.Status, check.Equals, CampaignDraft)
+	c.Assert(campaign.AuthorizationScope, check.Equals, DefaultAuthorizationScope)
+	c.Assert(campaign.RetentionPolicy, check.Equals, DefaultRetentionPolicy)
+
+	queued, err := GetQueuedMailLogs(time.Now().UTC().Add(time.Minute))
+	c.Assert(err, check.Equals, nil)
+	c.Assert(len(queued), check.Equals, 0)
+
+	_, err = LaunchApprovedCampaign(campaign.Id, campaign.UserId)
+	c.Assert(err, check.Equals, ErrCampaignApprovalRequired)
+
+	err = SubmitCampaignForApproval(campaign.Id, campaign.UserId)
+	c.Assert(err, check.Equals, nil)
+	campaign, err = GetCampaign(campaign.Id, campaign.UserId)
+	c.Assert(err, check.Equals, nil)
+	c.Assert(campaign.Status, check.Equals, CampaignPending)
+
+	err = ApproveCampaign(campaign.Id, campaign.UserId, int64(1), "approved")
+	c.Assert(err, check.Equals, nil)
+	campaign, err = GetCampaign(campaign.Id, campaign.UserId)
+	c.Assert(err, check.Equals, nil)
+	c.Assert(campaign.Status, check.Equals, CampaignApproved)
+	c.Assert(campaign.ApproverId, check.Equals, int64(1))
+	c.Assert(campaign.ApprovalNotes, check.Equals, "approved")
+
+	campaign, err = LaunchApprovedCampaign(campaign.Id, campaign.UserId)
+	c.Assert(err, check.Equals, nil)
+	c.Assert(campaign.Status, check.Equals, CampaignInProgress)
+}
+
+func (s *ModelsSuite) TestRejectCampaignRequiresReason(c *check.C) {
+	campaign := s.createCampaignDependencies(c)
+	c.Assert(PostCampaign(&campaign, campaign.UserId), check.Equals, nil)
+	c.Assert(SubmitCampaignForApproval(campaign.Id, campaign.UserId), check.Equals, nil)
+	err := RejectCampaign(campaign.Id, campaign.UserId, "")
+	c.Assert(err, check.Equals, ErrCampaignRejectReasonRequired)
+	c.Assert(RejectCampaign(campaign.Id, campaign.UserId, "scope needs update"), check.Equals, nil)
+	campaign, err = GetCampaign(campaign.Id, campaign.UserId)
+	c.Assert(err, check.Equals, nil)
+	c.Assert(campaign.Status, check.Equals, CampaignRejected)
+	c.Assert(campaign.RejectionReason, check.Equals, "scope needs update")
+}
+
 func (s *ModelsSuite) TestDeleteCampaignAlsoDeletesMailLogs(c *check.C) {
 	campaign := s.createCampaign(c)
 	ms, err := GetMailLogsByCampaign(campaign.Id)

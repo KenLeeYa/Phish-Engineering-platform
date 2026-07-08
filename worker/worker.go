@@ -115,6 +115,13 @@ func (w *DefaultWorker) Start() {
 
 // LaunchCampaign starts a campaign
 func (w *DefaultWorker) LaunchCampaign(c models.Campaign) {
+	if c.Status != models.CampaignInProgress && c.Status != models.CampaignQueued {
+		log.WithFields(logrus.Fields{
+			"campaign_id": c.Id,
+			"status":      c.Status,
+		}).Warn("Refusing to launch campaign outside approved sending lifecycle")
+		return
+	}
 	ms, err := models.GetMailLogsByCampaign(c.Id)
 	if err != nil {
 		log.Error(err)

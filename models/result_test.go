@@ -39,10 +39,10 @@ func (s *ModelsSuite) TestFormatAddress(c *check.C) {
 func (s *ModelsSuite) TestResultSendingStatus(ch *check.C) {
 	c := s.createCampaignDependencies(ch)
 	ch.Assert(PostCampaign(&c, c.UserId), check.Equals, nil)
-	// This campaign wasn't scheduled, so we expect the status to
-	// be sending
+	// Campaign creation now creates a draft. No recipient should be marked
+	// as sending until the campaign is approved and launched.
 	for _, r := range c.Results {
-		ch.Assert(r.Status, check.Equals, StatusSending)
+		ch.Assert(r.Status, check.Equals, StatusScheduled)
 		ch.Assert(r.ModifiedDate, check.Equals, c.CreatedDate)
 	}
 }
@@ -64,14 +64,10 @@ func (s *ModelsSuite) TestResultVariableStatus(ch *check.C) {
 	c.SendByDate = c.LaunchDate.Add(2 * time.Minute)
 	ch.Assert(PostCampaign(&c, c.UserId), check.Equals, nil)
 
-	// The campaign has a window smaller than our group size, so we expect some
-	// emails to be sent immediately, while others will be scheduled
+	// Campaign creation now creates a draft, so all recipients remain scheduled
+	// until the approved launch action starts the sending lifecycle.
 	for _, r := range c.Results {
-		if r.SendDate.Before(c.CreatedDate) || r.SendDate.Equal(c.CreatedDate) {
-			ch.Assert(r.Status, check.Equals, StatusSending)
-		} else {
-			ch.Assert(r.Status, check.Equals, StatusScheduled)
-		}
+		ch.Assert(r.Status, check.Equals, StatusScheduled)
 	}
 }
 

@@ -39,6 +39,7 @@ func (s *ModelsSuite) TearDownTest(c *check.C) {
 	db.Delete(Page{})
 	db.Delete(Result{})
 	db.Delete(MailLog{})
+	db.Delete(AuditLog{})
 	db.Delete(Campaign{})
 
 	// Reset users table to default state.
@@ -131,6 +132,7 @@ func resetBenchmark(b *testing.B) {
 	db.Delete(Page{})
 	db.Delete(Result{})
 	db.Delete(MailLog{})
+	db.Delete(AuditLog{})
 	db.Delete(Campaign{})
 
 	// Reset users table to default state.

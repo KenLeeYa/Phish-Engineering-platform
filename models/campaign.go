@@ -19,8 +19,14 @@ type Campaign struct {
 	CreatedDate   time.Time `json:"created_date"`
 	LaunchDate    time.Time `json:"launch_date"`
 	SendByDate    time.Time `json:"send_by_date"`
-	CompletedDate time.Time `json:"completed_date"`
-	TemplateId    int64     `json:"-"`
+	CompletedDate      time.Time `json:"completed_date"`
+	AuthorizationScope string    `json:"authorization_scope"`
+	RetentionPolicy    string    `json:"retention_policy"`
+	ApproverId         int64     `json:"approver_id"`
+	ApprovedAt         time.Time `json:"approved_at"`
+	ApprovalNotes      string    `json:"approval_notes"`
+	RejectionReason    string    `json:"rejection_reason"`
+	TemplateId         int64     `json:"-"`
 	Template      Template  `json:"template"`
 	PageId        int64     `json:"-"`
 	Page          Page      `json:"page"`
@@ -54,10 +60,14 @@ type CampaignSummary struct {
 	CreatedDate   time.Time     `json:"created_date"`
 	LaunchDate    time.Time     `json:"launch_date"`
 	SendByDate    time.Time     `json:"send_by_date"`
-	CompletedDate time.Time     `json:"completed_date"`
-	Status        string        `json:"status"`
-	Name          string        `json:"name"`
-	Stats         CampaignStats `json:"stats"`
+	CompletedDate      time.Time     `json:"completed_date"`
+	AuthorizationScope string        `json:"authorization_scope"`
+	RetentionPolicy    string        `json:"retention_policy"`
+	ApproverId         int64         `json:"approver_id"`
+	ApprovedAt         time.Time     `json:"approved_at"`
+	Status             string        `json:"status"`
+	Name               string        `json:"name"`
+	Stats              CampaignStats `json:"stats"`
 }
 
 // CampaignStats is a struct representing the statistics for a single campaign
@@ -126,6 +136,20 @@ var ErrSMTPNotFound = errors.New("Sending profile not found")
 // launch date
 var ErrInvalidSendByDate = errors.New("The launch date must be before the \"send emails by\" date")
 
+// ErrCampaignInvalidTransition indicates that a campaign lifecycle action was invalid.
+var ErrCampaignInvalidTransition = errors.New("Invalid campaign lifecycle transition")
+
+// ErrCampaignRejectReasonRequired indicates that rejection requires a reason.
+var ErrCampaignRejectReasonRequired = errors.New("Rejection reason required")
+
+// ErrCampaignApprovalRequired indicates that launch requires approval first.
+var ErrCampaignApprovalRequired = errors.New("Campaign must be approved before launch")
+
+const (
+	DefaultAuthorizationScope = "authorized_internal_training"
+	DefaultRetentionPolicy    = "default_retention_policy"
+)
+
 // RecipientParameter is the URL parameter that points to the result ID for a recipient.
 const RecipientParameter = "rid"
 
@@ -152,6 +176,82 @@ func (c *Campaign) Validate() error {
 func (c *Campaign) UpdateStatus(s string) error {
 	// This could be made simpler, but I think there's a bug in gorm
 	return db.Table("campaigns").Where("id=?", c.Id).Update("status", s).Error
+}
+
+// SubmitCampaignForApproval moves a draft campaign into the approval queue.
+func SubmitCampaignForApproval(id int64, uid int64) error {
+	c, err := GetCampaign(id, uid)
+	if err != nil {
+		return err
+	}
+	if c.Status != CampaignDraft && c.Status != CampaignRejected {
+		return ErrCampaignInvalidTransition
+	}
+	return db.Model(&Campaign{}).Where("id=? and user_id=?", id, uid).
+		Update("status", CampaignPending).Error
+}
+
+// ApproveCampaign marks a pending campaign as approved.
+func ApproveCampaign(id int64, uid int64, approverID int64, notes string) error {
+	c, err := GetCampaign(id, uid)
+	if err != nil {
+		return err
+	}
+	if c.Status != CampaignPending {
+		return ErrCampaignInvalidTransition
+	}
+	now := time.Now().UTC()
+	updates := map[string]interface{}{
+		"status":           CampaignApproved,
+		"approver_id":      approverID,
+		"approved_at":      now,
+		"approval_notes":   notes,
+		"rejection_reason": "",
+	}
+	return db.Model(&Campaign{}).Where("id=? and user_id=?", id, uid).
+		Updates(updates).Error
+}
+
+// RejectCampaign marks a pending campaign as rejected.
+func RejectCampaign(id int64, uid int64, reason string) error {
+	if reason == "" {
+		return ErrCampaignRejectReasonRequired
+	}
+	c, err := GetCampaign(id, uid)
+	if err != nil {
+		return err
+	}
+	if c.Status != CampaignPending {
+		return ErrCampaignInvalidTransition
+	}
+	updates := map[string]interface{}{
+		"status":           CampaignRejected,
+		"rejection_reason": reason,
+	}
+	return db.Model(&Campaign{}).Where("id=? and user_id=?", id, uid).
+		Updates(updates).Error
+}
+
+// LaunchApprovedCampaign moves an approved campaign into the existing queued
+// or in-progress sending lifecycle. The caller is responsible for queuing the
+// campaign worker when the returned campaign is in progress.
+func LaunchApprovedCampaign(id int64, uid int64) (Campaign, error) {
+	c, err := GetCampaign(id, uid)
+	if err != nil {
+		return c, err
+	}
+	if c.Status != CampaignApproved {
+		return c, ErrCampaignApprovalRequired
+	}
+	now := time.Now().UTC()
+	nextStatus := CampaignQueued
+	if c.LaunchDate.Before(now) || c.LaunchDate.Equal(now) {
+		nextStatus = CampaignInProgress
+	}
+	c.Status = nextStatus
+	err = db.Model(&Campaign{}).Where("id=? and user_id=?", id, uid).
+		Update("status", nextStatus).Error
+	return c, err
 }
 
 // AddEvent creates a new campaign event in the database
@@ -324,7 +424,7 @@ func GetCampaignSummaries(uid int64) (CampaignSummaries, error) {
 	cs := []CampaignSummary{}
 	// Get the basic campaign information
 	query := db.Table("campaigns").Where("user_id = ?", uid)
-	query = query.Select("id, name, created_date, launch_date, send_by_date, completed_date, status")
+	query = query.Select("id, name, created_date, launch_date, send_by_date, completed_date, authorization_scope, retention_policy, approver_id, approved_at, status")
 	err := query.Scan(&cs).Error
 	if err != nil {
 		log.Error(err)
@@ -347,7 +447,7 @@ func GetCampaignSummaries(uid int64) (CampaignSummaries, error) {
 func GetCampaignSummary(id int64, uid int64) (CampaignSummary, error) {
 	cs := CampaignSummary{}
 	query := db.Table("campaigns").Where("user_id = ? AND id = ?", uid, id)
-	query = query.Select("id, name, created_date, launch_date, send_by_date, completed_date, status")
+	query = query.Select("id, name, created_date, launch_date, send_by_date, completed_date, authorization_scope, retention_policy, approver_id, approved_at, status")
 	err := query.Scan(&cs).Error
 	if err != nil {
 		log.Error(err)
@@ -458,7 +558,13 @@ func PostCampaign(c *Campaign, uid int64) error {
 	c.UserId = uid
 	c.CreatedDate = time.Now().UTC()
 	c.CompletedDate = time.Time{}
-	c.Status = CampaignQueued
+	c.Status = CampaignDraft
+	if c.AuthorizationScope == "" {
+		c.AuthorizationScope = DefaultAuthorizationScope
+	}
+	if c.RetentionPolicy == "" {
+		c.RetentionPolicy = DefaultRetentionPolicy
+	}
 	if c.LaunchDate.IsZero() {
 		c.LaunchDate = c.CreatedDate
 	} else {
@@ -466,9 +572,6 @@ func PostCampaign(c *Campaign, uid int64) error {
 	}
 	if !c.SendByDate.IsZero() {
 		c.SendByDate = c.SendByDate.UTC()
-	}
-	if c.LaunchDate.Before(c.CreatedDate) || c.LaunchDate.Equal(c.CreatedDate) {
-		c.Status = CampaignInProgress
 	}
 	// Check to make sure all the groups already exist
 	// Also, later we'll need to know the total number of recipients (counting
@@ -572,7 +675,6 @@ func PostCampaign(c *Campaign, uid int64) error {
 			}
 			processing := false
 			if r.SendDate.Before(c.CreatedDate) || r.SendDate.Equal(c.CreatedDate) {
-				r.Status = StatusSending
 				processing = true
 			}
 			err = tx.Save(r).Error
