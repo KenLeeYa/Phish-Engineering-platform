@@ -705,6 +705,30 @@ func PostCampaign(c *Campaign, uid int64) error {
 				tx.Rollback()
 				return err
 			}
+			deliveryStatus := DeliveryStatusScheduled
+			if processing {
+				deliveryStatus = DeliveryStatusQueued
+			}
+			ds := &RecipientDeliveryStatus{
+				CampaignId:       c.Id,
+				RecipientId:      r.Id,
+				RId:              r.RId,
+				UserId:           c.UserId,
+				Email:            r.Email,
+				SendingProfileId: c.SMTPId,
+				ScheduledAt:      sendDate,
+				Status:           deliveryStatus,
+				CreatedAt:        c.CreatedDate,
+				UpdatedAt:        c.CreatedDate,
+			}
+			err = tx.Save(ds).Error
+			if err != nil {
+				log.WithFields(logrus.Fields{
+					"email": t.Email,
+				}).Errorf("error creating recipient delivery status: %v", err)
+				tx.Rollback()
+				return err
+			}
 			recipientIndex++
 		}
 	}
@@ -728,6 +752,11 @@ func DeleteCampaign(id int64) error {
 		return err
 	}
 	err = db.Where("campaign_id=?", id).Delete(&MailLog{}).Error
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+	err = db.Where("campaign_id=?", id).Delete(&RecipientDeliveryStatus{}).Error
 	if err != nil {
 		log.Error(err)
 		return err

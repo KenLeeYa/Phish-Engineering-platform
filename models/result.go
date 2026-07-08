@@ -61,31 +61,42 @@ func (r *Result) HandleEmailSent() error {
 	r.SendDate = event.Time
 	r.Status = EventSent
 	r.ModifiedDate = event.Time
+	if err = UpdateRecipientDeliveryStatusByRID(r.RId, DeliveryStatusSent, ""); err != nil {
+		return err
+	}
 	return db.Save(r).Error
 }
 
 // HandleEmailError updates a Result to indicate that there was an error when
 // attempting to send the email to the remote SMTP server.
 func (r *Result) HandleEmailError(err error) error {
-	event, err := r.createEvent(EventSendingError, EventError{Error: err.Error()})
+	errSummary := err.Error()
+	event, err := r.createEvent(EventSendingError, EventError{Error: errSummary})
 	if err != nil {
 		return err
 	}
 	r.Status = Error
 	r.ModifiedDate = event.Time
+	if err = UpdateRecipientDeliveryStatusByRID(r.RId, DeliveryStatusFailed, errSummary); err != nil {
+		return err
+	}
 	return db.Save(r).Error
 }
 
 // HandleEmailBackoff updates a Result to indicate that the email received a
 // temporary error and needs to be retried
 func (r *Result) HandleEmailBackoff(err error, sendDate time.Time) error {
-	event, err := r.createEvent(EventSendingError, EventError{Error: err.Error()})
+	errSummary := err.Error()
+	event, err := r.createEvent(EventSendingError, EventError{Error: errSummary})
 	if err != nil {
 		return err
 	}
 	r.Status = StatusRetry
 	r.SendDate = sendDate
 	r.ModifiedDate = event.Time
+	if err = UpdateRecipientDeliveryStatusByRID(r.RId, DeliveryStatusDeferred, errSummary); err != nil {
+		return err
+	}
 	return db.Save(r).Error
 }
 

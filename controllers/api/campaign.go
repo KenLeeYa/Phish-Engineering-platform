@@ -151,6 +151,39 @@ func (as *Server) CampaignResults(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// CampaignDelivery returns governed per-recipient delivery status for a campaign.
+func (as *Server) CampaignDelivery(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		JSONResponse(w, models.Response{Success: false, Message: http.StatusText(http.StatusMethodNotAllowed)}, http.StatusMethodNotAllowed)
+		return
+	}
+	currentUser := ctx.Get(r, "user").(models.User)
+	allowed, err := currentUser.HasAnyPermission(models.PermissionViewRecipientPII, models.PermissionLaunchCampaign, models.PermissionExportReports)
+	if err != nil {
+		JSONResponse(w, models.Response{Success: false, Message: err.Error()}, http.StatusInternalServerError)
+		return
+	}
+	if !allowed {
+		JSONResponse(w, models.Response{Success: false, Message: "沒有檢視配送狀態的權限"}, http.StatusForbidden)
+		return
+	}
+	vars := mux.Vars(r)
+	id, _ := strconv.ParseInt(vars["id"], 0, 64)
+	_, err = models.GetCampaign(id, ctx.Get(r, "user_id").(int64))
+	if err != nil {
+		log.Error(err)
+		JSONResponse(w, models.Response{Success: false, Message: "Campaign not found"}, http.StatusNotFound)
+		return
+	}
+	statuses, err := models.GetDeliveryStatusesByCampaign(id, ctx.Get(r, "user_id").(int64))
+	if err != nil {
+		log.Error(err)
+		JSONResponse(w, models.Response{Success: false, Message: err.Error()}, http.StatusInternalServerError)
+		return
+	}
+	JSONResponse(w, statuses, http.StatusOK)
+}
+
 // CampaignSummary returns the summary for a given campaign.
 func (as *Server) CampaignSummary(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
