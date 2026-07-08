@@ -5,35 +5,35 @@
     </div>
     <div style="display:none;" id="campaignResults">
         <div class="row">
-            <h1 class="page-header" id="page-title">Results for campaign.name</h1>
+            <h1 class="page-header" id="page-title">{{t "nav.results"}}</h1>
         </div>
         <div class="row">
             <a href="/campaigns" class="btn btn-default">
-                <i class="fa fa-arrow-circle-o-left fa-lg"></i> Back
+                <i class="fa fa-arrow-circle-o-left fa-lg"></i> {{t "action.back"}}
             </a>
             <div class="btn-group">
                 <button type="button" id="exportButton" class="btn btn-primary dropdown-toggle" data-toggle="dropdown"
                     aria-haspopup="true" aria-expanded="true">
-                    <i class="fa fa-file-excel-o"></i> Export CSV
+                    <i class="fa fa-file-excel-o"></i> {{t "results.export_csv"}}
                     <i class="fa fa-caret-down"></i>
                 </button>
                 <ul class="dropdown-menu" aria-labelledby="exportButton">
                     <li>
-                        <a href="#" onclick="exportAsCSV('results')">Results</a>
+                        <a href="#" onclick="exportAsCSV('results')">{{t "results.results"}}</a>
                     </li>
                     <li>
-                        <a href="#" onclick="exportAsCSV('events')">Raw Events</a>
+                        <a href="#" onclick="exportAsCSV('events')">{{t "results.raw_events"}}</a>
                     </li>
                 </ul>
             </div>
             <button id="complete_button" type="button" class="btn btn-blue" data-toggle="tooltip" onclick="completeCampaign()">
-                <i class="fa fa-flag-checkered"></i> Complete
+                <i class="fa fa-flag-checkered"></i> {{t "action.complete"}}
             </button>
             <button type="button" class="btn btn-danger" data-toggle="tooltip" onclick="deleteCampaign()">
-                <i class="fa fa-trash-o fa-lg"></i> Delete
+                <i class="fa fa-trash-o fa-lg"></i> {{t "action.delete"}}
             </button>
             <button id="refresh_btn" type="button" class="btn btn-blue" data-toggle="tooltip" onclick="refresh()">
-                <i class="fa fa-refresh fa-lg"></i> Refresh
+                <i class="fa fa-refresh fa-lg"></i> {{t "action.refresh"}}
             </button>
             <span id="refresh_message">
                 <i class="fa fa-spin fa-spinner"></i> Refreshing
@@ -58,25 +58,25 @@
                 </div>
                 <div class="row" id="resultsMapContainer">
                     <div class="col-md-6">
-                        <p style="text-align:center;">Targets Map</p>
+                        <p style="text-align:center;">{{t "results.targets_map"}}</p>
                         <div id="resultsMap"></div>
                     </div>
                 </div>
             </div>
         </div>
         <div class="row">
-            <h2>Details</h2>
+            <h2>{{t "results.details"}}</h2>
             <table id="resultsTable" class="table">
                 <thead>
                     <tr>
-                        <th>Result ID</th>
+                        <th>{{t "results.result_id"}}</th>
                         <th class="no-sort"></th>
-                        <th>First Name</th>
-                        <th>Last Name</th>
-                        <th>Email</th>
-                        <th>Position</th>
-                        <th>Status</th>
-                        <th class="text-center">Reported</th>
+                        <th>{{t "common.first_name"}}</th>
+                        <th>{{t "common.last_name"}}</th>
+                        <th>{{t "common.email"}}</th>
+                        <th>{{t "common.position"}}</th>
+                        <th>{{t "common.status"}}</th>
+                        <th class="text-center">{{t "results.reported"}}</th>
                     </tr>
                 </thead>
                 <tbody>

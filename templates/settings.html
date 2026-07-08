@@ -1,18 +1,18 @@
 {{define "body"}}
 <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
     <div class="row">
-        <h1 class="page-header">Settings</h1>
+        <h1 class="page-header">{{t "nav.account_settings"}}</h1>
     </div>
     <div id="flashes" class="row"></div>
     {{template "flashes" .Flashes}}
     <!-- Nav tabs -->
     <ul class="nav nav-tabs" role="tablist">
         <li class="active" role="mainSettings"><a href="#mainSettings" aria-controls="mainSettings" role="tab"
-                data-toggle="tab">Account Settings</a></li>
+                data-toggle="tab">{{t "settings.account"}}</a></li>
         <li role="uiSettings"><a href="#uiSettings" aria-controls="uiSettings" role="tab" data-toggle="tab">UI
-                Settings</a></li>
+                {{t "settings.ui"}}</a></li>
         <li role="reportingSettings"><a href="#reportingSettings" aria-controls="reportingSettings" role="tab" id="reporttab"
-            data-toggle="tab">Reporting Settings</a></li>
+            data-toggle="tab">{{t "settings.reporting"}}</a></li>
     </ul>
     <!-- Tab Panes -->
     <div class="tab-content">
@@ -28,20 +28,20 @@
             <br />
             {{end}}
             <div class="row">
-                <label for="api_key" class="col-sm-2 control-label form-label">API Key:</label>
+                <label for="api_key" class="col-sm-2 control-label form-label">{{t "settings.api_key"}}</label>
                 <div class="col-md-6">
                     <input type="text" id="api_key" onclick="this.select();" value="{{.User.ApiKey}}"
                         class="form-control" readonly />
                 </div>
                 <form id="apiResetForm">
-                    <button class="btn btn-primary"><i class="fa fa-refresh" type="submit"></i> Reset</button>
+                    <button class="btn btn-primary"><i class="fa fa-refresh" type="submit"></i> {{t "action.reset"}}</button>
                     <input type="hidden" name="csrf_token" value="{{.Token}}" />
                 </form>
             </div>
             <br />
             <form id="settingsForm">
                 <div class="row">
-                    <label for="username" class="col-sm-2 control-label form-label">Username:</label>
+                    <label for="username" class="col-sm-2 control-label form-label">{{t "auth.username"}}:</label>
                     <div class="col-md-6">
                         <input type="text" id="username" name="username" value="{{.User.Username}}"
                             class="form-control" />
@@ -49,7 +49,7 @@
                 </div>
                 <br />
                 <div class="row">
-                    <label for="current_password" class="col-sm-2 control-label form-label">Old Password:</label>
+                    <label for="current_password" class="col-sm-2 control-label form-label">{{t "settings.old_password"}}</label>
                     <div class="col-md-6">
                         <input type="password" id="current_password" name="current_password" autocomplete="off"
                             class="form-control" />
@@ -57,7 +57,7 @@
                 </div>
                 <br />
                 <div class="row">
-                    <label for="new_password" class="col-sm-2 control-label form-label">New Password:</label>
+                    <label for="new_password" class="col-sm-2 control-label form-label">{{t "settings.new_password"}}</label>
                     <div class="col-md-6">
                         <input type="password" id="password" name="new_password" autocomplete="new-password"
                             class="form-control" />
@@ -72,8 +72,7 @@
                 </div>
                 <br />
                 <div class="row">
-                    <label for="confirm_new_password" class="col-sm-2 control-label form-label">Confirm New
-                        Password:</label>
+                    <label for="confirm_new_password" class="col-sm-2 control-label form-label">{{t "settings.confirm_new_password"}}</label>
                     <div class="col-md-6">
                         <input type="password" id="confirm_new_password" name="confirm_new_password" autocomplete="off"
                             class="form-control" />
@@ -81,7 +80,7 @@
                 </div>
                 <input type="hidden" name="csrf_token" value="{{.Token}}" />
                 <br />
-                <button class="btn btn-primary" type="submit"><i class="fa fa-save"></i> Save</button>
+                <button class="btn btn-primary" type="submit"><i class="fa fa-save"></i> {{t "action.save"}}</button>
             </form>
             <br />
         </div>
@@ -89,7 +88,7 @@
             <br />
             <div class="checkbox checkbox-primary">
                 <input id="use_map" type="checkbox">
-                <label for="use_map">Show campaign results map</label>
+                <label for="use_map">{{t "settings.show_map"}}</label>
             </div>
         </div>
         <!-- Reporting Settings Begin -->
@@ -98,7 +97,7 @@
             <br />
             <div class="row">
                 <div class="col-md-6">
-                    Monitor an IMAP account for emails reported by users.
+                    {{t "settings.monitor_imap"}}
                 </div>
              </div>
             <br />
@@ -107,7 +106,7 @@
                 <div class="col-md-6">
                 <div class="checkbox checkbox-primary">
                     <input id="use_imap" type="checkbox">
-                    <label for="use_imap">Enable Email Account Monitoring</label>
+                    <label for="use_imap">{{t "settings.email_monitoring"}}</label>
                 </div>
                 </div>
              </div>
@@ -115,7 +114,7 @@
 
             
             <div class="row">
-                <label for="imaphost" class="col-sm-2 control-label form-label">IMAP Host:</label>
+                <label for="imaphost" class="col-sm-2 control-label form-label">{{t "settings.imap_host"}}</label>
                 <div class="col-md-6">
                     <input type="text" id="imaphost" name="imaphost" placeholder="imap.example.com"
                         class="form-control" />
@@ -124,7 +123,7 @@
             <br />
 
             <div class="row">
-                <label for="imapport" class="col-sm-2 control-label form-label">IMAP Port:</label>
+                <label for="imapport" class="col-sm-2 control-label form-label">{{t "settings.imap_port"}}</label>
                 <div class="col-md-6">
                     <input type="text" id="imapport" name="imapport" placeholder="993"
                         class="form-control" />
@@ -133,7 +132,7 @@
             <br />
 
             <div class="row">
-                <label for="imapusername" class="col-sm-2 control-label form-label">IMAP Username:</label>
+                <label for="imapusername" class="col-sm-2 control-label form-label">{{t "settings.imap_username"}}</label>
                 <div class="col-md-6">
                     <input type="text" id="imapusername" name="imapusername" placeholder="Username"
                         class="form-control" />
@@ -142,7 +141,7 @@
             <br />
 
             <div class="row">
-                <label for="imappassword" class="col-sm-2 control-label form-label">IMAP Password:</label>
+                <label for="imappassword" class="col-sm-2 control-label form-label">{{t "settings.imap_password"}}</label>
                 <div class="col-md-6">
                     <input type="password" id="imappassword" name="imappassword" placeholder="Password" autocomplete="off"
                         class="form-control" />
@@ -152,7 +151,7 @@
 
 
             <div class="row">
-                <label for="use_tls" class="col-sm-2 control-label form-label">Use TLS:</label>
+                <label for="use_tls" class="col-sm-2 control-label form-label">{{t "settings.use_tls"}}</label>
                 <div class="col-md-6">
                     <div class="checkbox checkbox-primary">
                         <input id="use_tls" type="checkbox">
@@ -234,8 +233,8 @@
                 </div>
             </div>
 
-            <button class="btn btn-primary" id ="savesettings" type="button"><i class="fa fa-save"></i> Save</button>
-            <button class="btn btn-primary" id="validateimap" type="button"><i class="fa fa-wrench"></i> Test Settings</button>
+            <button class="btn btn-primary" id ="savesettings" type="button"><i class="fa fa-save"></i> {{t "action.save"}}</button>
+            <button class="btn btn-primary" id="validateimap" type="button"><i class="fa fa-wrench"></i> {{t "settings.test_settings"}}</button>
 
 
         </form>

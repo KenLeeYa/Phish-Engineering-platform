@@ -15,6 +15,7 @@ import (
 	"github.com/gophish/gophish/config"
 	ctx "github.com/gophish/gophish/context"
 	"github.com/gophish/gophish/controllers/api"
+	uii18n "github.com/gophish/gophish/i18n"
 	log "github.com/gophish/gophish/logger"
 	mid "github.com/gophish/gophish/middleware"
 	"github.com/gophish/gophish/middleware/ratelimit"
@@ -199,49 +200,49 @@ func newTemplateParams(r *http.Request) templateParams {
 // Base handles the default path and template execution
 func (as *AdminServer) Base(w http.ResponseWriter, r *http.Request) {
 	params := newTemplateParams(r)
-	params.Title = "Dashboard"
+	params.Title = uii18n.T("nav.dashboard")
 	getTemplate(w, "dashboard").ExecuteTemplate(w, "base", params)
 }
 
 // Campaigns handles the default path and template execution
 func (as *AdminServer) Campaigns(w http.ResponseWriter, r *http.Request) {
 	params := newTemplateParams(r)
-	params.Title = "Campaigns"
+	params.Title = uii18n.T("nav.campaigns")
 	getTemplate(w, "campaigns").ExecuteTemplate(w, "base", params)
 }
 
 // CampaignID handles the default path and template execution
 func (as *AdminServer) CampaignID(w http.ResponseWriter, r *http.Request) {
 	params := newTemplateParams(r)
-	params.Title = "Campaign Results"
+	params.Title = uii18n.T("nav.results")
 	getTemplate(w, "campaign_results").ExecuteTemplate(w, "base", params)
 }
 
 // Templates handles the default path and template execution
 func (as *AdminServer) Templates(w http.ResponseWriter, r *http.Request) {
 	params := newTemplateParams(r)
-	params.Title = "Email Templates"
+	params.Title = uii18n.T("nav.email_templates")
 	getTemplate(w, "templates").ExecuteTemplate(w, "base", params)
 }
 
 // Groups handles the default path and template execution
 func (as *AdminServer) Groups(w http.ResponseWriter, r *http.Request) {
 	params := newTemplateParams(r)
-	params.Title = "Users & Groups"
+	params.Title = uii18n.T("nav.users_groups")
 	getTemplate(w, "groups").ExecuteTemplate(w, "base", params)
 }
 
 // LandingPages handles the default path and template execution
 func (as *AdminServer) LandingPages(w http.ResponseWriter, r *http.Request) {
 	params := newTemplateParams(r)
-	params.Title = "Landing Pages"
+	params.Title = uii18n.T("nav.landing_pages")
 	getTemplate(w, "landing_pages").ExecuteTemplate(w, "base", params)
 }
 
 // SendingProfiles handles the default path and template execution
 func (as *AdminServer) SendingProfiles(w http.ResponseWriter, r *http.Request) {
 	params := newTemplateParams(r)
-	params.Title = "Sending Profiles"
+	params.Title = uii18n.T("nav.sending_profiles")
 	getTemplate(w, "sending_profiles").ExecuteTemplate(w, "base", params)
 }
 
@@ -250,7 +251,7 @@ func (as *AdminServer) Settings(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case r.Method == "GET":
 		params := newTemplateParams(r)
-		params.Title = "Settings"
+		params.Title = uii18n.T("nav.account_settings")
 		session := ctx.Get(r, "session").(*sessions.Session)
 		session.Save(r, w)
 		getTemplate(w, "settings").ExecuteTemplate(w, "base", params)
@@ -290,7 +291,7 @@ func (as *AdminServer) Settings(w http.ResponseWriter, r *http.Request) {
 // and management of user accounts within Gophish.
 func (as *AdminServer) UserManagement(w http.ResponseWriter, r *http.Request) {
 	params := newTemplateParams(r)
-	params.Title = "User Management"
+	params.Title = uii18n.T("nav.user_management")
 	getTemplate(w, "users").ExecuteTemplate(w, "base", params)
 }
 
@@ -314,10 +315,10 @@ func (as *AdminServer) handleInvalidLogin(w http.ResponseWriter, r *http.Request
 		Title   string
 		Flashes []interface{}
 		Token   string
-	}{Title: "Login", Token: csrf.Token(r)}
+	}{Title: uii18n.T("auth.login"), Token: csrf.Token(r)}
 	params.Flashes = session.Flashes()
 	session.Save(r, w)
-	templates := template.New("template")
+	templates := template.New("template").Funcs(templateFuncs())
 	_, err := templates.ParseFiles("templates/login.html", "templates/flashes.html")
 	if err != nil {
 		log.Error(err)
@@ -330,7 +331,7 @@ func (as *AdminServer) handleInvalidLogin(w http.ResponseWriter, r *http.Request
 // Webhooks is an admin-only handler that handles webhooks
 func (as *AdminServer) Webhooks(w http.ResponseWriter, r *http.Request) {
 	params := newTemplateParams(r)
-	params.Title = "Webhooks"
+	params.Title = uii18n.T("nav.webhooks")
 	getTemplate(w, "webhooks").ExecuteTemplate(w, "base", params)
 }
 
@@ -360,13 +361,13 @@ func (as *AdminServer) Login(w http.ResponseWriter, r *http.Request) {
 		Title   string
 		Flashes []interface{}
 		Token   string
-	}{Title: "Login", Token: csrf.Token(r)}
+	}{Title: uii18n.T("auth.login"), Token: csrf.Token(r)}
 	session := ctx.Get(r, "session").(*sessions.Session)
 	switch {
 	case r.Method == "GET":
 		params.Flashes = session.Flashes()
 		session.Save(r, w)
-		templates := template.New("template")
+		templates := template.New("template").Funcs(templateFuncs())
 		_, err := templates.ParseFiles("templates/login.html", "templates/flashes.html")
 		if err != nil {
 			log.Error(err)
@@ -477,12 +478,20 @@ func (as *AdminServer) ResetPassword(w http.ResponseWriter, r *http.Request) {
 
 // TODO: Make this execute the template, too
 func getTemplate(w http.ResponseWriter, tmpl string) *template.Template {
-	templates := template.New("template")
+	templates := template.New("template").Funcs(templateFuncs())
 	_, err := templates.ParseFiles("templates/base.html", "templates/nav.html", "templates/"+tmpl+".html", "templates/flashes.html")
 	if err != nil {
 		log.Error(err)
 	}
 	return template.Must(templates, err)
+}
+
+func templateFuncs() template.FuncMap {
+	return template.FuncMap{
+		"locale":          func() string { return uii18n.DefaultLocale },
+		"t":               uii18n.T,
+		"translationJSON": func() template.JS { return uii18n.MustJSON(uii18n.DefaultLocale) },
+	}
 }
 
 // Flash handles the rendering flash messages

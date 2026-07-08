@@ -4,41 +4,41 @@
         <div class="col-sm-3 col-md-2 sidebar">
             <ul class="nav nav-sidebar">
                 <li>
-                    <a href="/">Dashboard</a>
+                    <a href="/">{{t "nav.dashboard"}}</a>
                 </li>
                 <li>
-                    <a href="/campaigns">Campaigns</a>
+                    <a href="/campaigns">{{t "nav.campaigns"}}</a>
                 </li>
                 <li>
-                    <a href="/groups">Users &amp; Groups</a>
+                    <a href="/groups">{{t "nav.users_groups"}}</a>
                 </li>
-                <li> <a href="/templates">Email Templates</a>
-                </li>
-                <li>
-                    <a href="/landing_pages">Landing Pages</a>
+                <li> <a href="/templates">{{t "nav.email_templates"}}</a>
                 </li>
                 <li>
-                    <a href="/sending_profiles">Sending Profiles</a>
+                    <a href="/landing_pages">{{t "nav.landing_pages"}}</a>
                 </li>
                 <li>
-                    <a href="/settings">Account Settings</span></a>
+                    <a href="/sending_profiles">{{t "nav.sending_profiles"}}</a>
+                </li>
+                <li>
+                    <a href="/settings">{{t "nav.account_settings"}}</span></a>
                 </li>
                 {{if .ModifySystem}}
                 <li>
-                    <a href="/users">User Management<span class="nav-badge badge pull-right">Admin</span></a>
+                    <a href="/users">{{t "nav.user_management"}}<span class="nav-badge badge pull-right">Admin</span></a>
                 </li>
                 <li>
-                    <a href="/webhooks">Webhooks<span class="nav-badge badge pull-right">Admin</span></a>
+                    <a href="/webhooks">{{t "nav.webhooks"}}<span class="nav-badge badge pull-right">Admin</span></a>
                 </li>
                 {{end}}
                 <li>
                     <hr>
                 </li>
                 <li>
-                    <a href="https://docs.getgophish.com/user-guide/">User Guide</a>
+                    <a href="https://docs.getgophish.com/user-guide/">{{t "nav.user_guide"}}</a>
                 </li>
                 <li>
-                    <a href="https://docs.getgophish.com/api-documentation/">API Documentation</a>
+                    <a href="https://docs.getgophish.com/api-documentation/">{{t "nav.api_docs"}}</a>
                 </li>
             </ul>
         </div>
