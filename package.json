@@ -1,0 +1,38 @@
+{
+  "name": "local-awareness-platform",
+  "version": "0.6.0",
+  "private": true,
+  "type": "module",
+  "description": "Local-first platform for authorized internal security awareness simulations.",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "dev": "npm run build && node --watch dist/index.js",
+    "inspect:eml": "npm run build && node scripts/inspect-eml-directory.mjs",
+    "db:check": "node scripts/check-database.mjs",
+    "backup": "node scripts/backup-database.mjs",
+    "audit:verify": "node scripts/verify-audit.mjs",
+    "maintenance": "node scripts/maintenance.mjs",
+    "start": "node dist/index.js",
+    "test": "npm run build && node --test",
+    "verify": "npm run check && npm test"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "dependencies": {
+    "@fastify/static": "10.1.3",
+    "csv-parse": "7.0.2",
+    "docx": "9.6.1",
+    "fastify": "5.12.1",
+    "nodemailer": "9.0.5",
+    "postal-mime": "3.0.0",
+    "sanitize-html": "2.17.7"
+  },
+  "devDependencies": {
+    "@types/node": "24.13.3",
+    "@types/nodemailer": "7.0.10",
+    "@types/sanitize-html": "2.16.1",
+    "typescript": "7.0.2"
+  }
+}

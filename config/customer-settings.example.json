@@ -1,0 +1,20 @@
+{
+  "organizationName": "客戶公司名稱",
+  "timezone": "Asia/Taipei",
+  "retentionDays": 365,
+  "recipientDomains": ["customer.example"],
+  "senderDomains": ["awareness.customer.example"],
+  "testRecipientEmails": ["awareness-test@customer.example"],
+  "deferredOneTimeSetup": {
+    "adminDnsName": "awareness-admin.customer.example",
+    "trainingDnsName": "awareness-training.customer.example",
+    "trackingOrigin": "https://awareness-training.customer.example",
+    "secureCookies": true,
+    "httpsReverseProxyAcknowledged": true,
+    "bootstrapToken": "由客戶於首次初始化短期產生，完成後移除",
+    "artifactToolModule": "D:\\LocalAwareness\\runtime\\artifact_tool.mjs",
+    "smtpRelay": "由客戶郵件管理員於寄信階段設定",
+    "tlsCertificate": "由客戶憑證管理流程提供",
+    "backupTarget": "由客戶指定加密備份位置"
+  }
+}

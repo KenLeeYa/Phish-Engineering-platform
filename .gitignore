@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.local-data/
+*.log
+.env
+config/customer-settings.json
+config/*.secret.json
+coverage/

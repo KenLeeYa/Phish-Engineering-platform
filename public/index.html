@@ -1,0 +1,475 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light">
+    <title>Local Awareness Platform</title>
+    <link rel="stylesheet" href="/styles.css">
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="Local Awareness Platform 首頁">
+        <span class="brand-mark" aria-hidden="true">LA</span>
+        <span>
+          <strong>Local Awareness</strong>
+          <small>Security simulation control plane</small>
+        </span>
+      </a>
+      <div class="topbar-state">
+        <span class="environment-dot" aria-hidden="true"></span>
+        <span>本機單租戶</span>
+        <button id="logoutButton" class="button ghost hidden" type="button">登出</button>
+      </div>
+    </header>
+
+    <main>
+      <section id="loadingView" class="auth-shell" aria-live="polite">
+        <div class="auth-card loading-card">
+          <span class="spinner" aria-hidden="true"></span>
+          <p>正在檢查本機平台狀態…</p>
+        </div>
+      </section>
+
+      <section id="setupView" class="auth-shell hidden">
+        <div class="auth-intro">
+          <span class="eyebrow">Local Pilot · One-time setup</span>
+          <h1>建立客戶端控制平面</h1>
+          <p>建立本機系統管理員與組織基線；SMTP、TLS 憑證與正式網域驗證可在客戶部署時一次設定。</p>
+          <ul class="guardrail-list">
+            <li>預設只監聽 127.0.0.1</li>
+            <li>未完成連接器測試與雙人核准前不能寄信</li>
+            <li>密碼只保存 scrypt 雜湊</li>
+          </ul>
+        </div>
+        <form id="setupForm" class="auth-card">
+          <span class="step-label">首次初始化</span>
+          <h2>建立系統管理員</h2>
+          <label>
+            組織名稱
+            <input name="organizationName" autocomplete="organization" minlength="2" maxlength="120" required>
+          </label>
+          <div class="field-row">
+            <label>
+              顯示名稱
+              <input name="displayName" autocomplete="name" minlength="2" maxlength="80" required>
+            </label>
+            <label>
+              管理員帳號
+              <input name="username" autocomplete="username" minlength="3" maxlength="80" required>
+            </label>
+          </div>
+          <label>
+            管理員密碼
+            <input name="password" type="password" autocomplete="new-password" minlength="12" maxlength="128" required>
+            <small>至少 12 個字元，且不可包含完整管理員帳號。</small>
+          </label>
+          <label>
+            再次輸入密碼
+            <input name="passwordConfirmation" type="password" autocomplete="new-password" minlength="12" maxlength="128" required>
+          </label>
+          <label>
+            一次性初始化碼
+            <input name="bootstrapToken" type="password" autocomplete="one-time-code" required>
+            <small>由 <code>run-local.ps1</code> 啟動時顯示；完成初始化後即可丟棄。</small>
+          </label>
+          <button class="button primary full" type="submit">完成初始化</button>
+          <p class="form-message" data-form-message></p>
+        </form>
+      </section>
+
+      <section id="passwordView" class="auth-shell hidden">
+        <div class="auth-intro">
+          <span class="eyebrow">Required security step</span>
+          <h1>先變更初始密碼</h1>
+          <p>新建立或由管理員重設的帳號，在執行任何平台功能前必須由本人變更密碼。完成後所有現有工作階段都會撤銷。</p>
+        </div>
+        <form id="passwordForm" class="auth-card compact">
+          <span class="step-label">帳號啟用</span>
+          <h2>設定個人密碼</h2>
+          <label>目前密碼<input name="currentPassword" type="password" autocomplete="current-password" required></label>
+          <label>新密碼<input name="newPassword" type="password" autocomplete="new-password" minlength="12" maxlength="128" required></label>
+          <label>再次輸入新密碼<input name="newPasswordConfirmation" type="password" autocomplete="new-password" minlength="12" maxlength="128" required></label>
+          <button class="button primary full" type="submit">變更密碼並重新登入</button>
+          <p class="form-message" data-form-message></p>
+        </form>
+      </section>
+
+      <section id="loginView" class="auth-shell hidden">
+        <div class="auth-intro">
+          <span class="eyebrow">Authorized use only</span>
+          <h1>回到演練控制台</h1>
+          <p>此平台只供客戶已核准的內部安全意識演練使用。所有設定異動都會留下本機稽核紀錄。</p>
+        </div>
+        <form id="loginForm" class="auth-card compact">
+          <span class="step-label">管理介面</span>
+          <h2>登入</h2>
+          <label>
+            管理員帳號
+            <input name="username" autocomplete="username" required>
+          </label>
+          <label>
+            密碼
+            <input name="password" type="password" autocomplete="current-password" required>
+          </label>
+          <button class="button primary full" type="submit">登入平台</button>
+          <p class="form-message" data-form-message></p>
+        </form>
+      </section>
+
+      <section id="dashboardView" class="dashboard hidden">
+        <div class="hero-panel">
+          <div>
+            <span class="eyebrow">Local Pilot · Phase 5</span>
+            <h1 id="organizationHeading">平台總覽</h1>
+            <p>名單、範本、雙人覆核、活動排程、事件統計與報告集中在客戶端執行。</p>
+          </div>
+          <div id="deliveryState" class="safety-lock">
+            <span class="lock-icon" aria-hidden="true">●</span>
+            <div>
+              <strong id="deliveryStateTitle">寄信尚未就緒</strong>
+              <small id="deliveryStateDetail">需完成客戶連接器測試與活動核准</small>
+            </div>
+          </div>
+        </div>
+
+        <nav class="workspace-tabs" aria-label="平台功能">
+          <button class="workspace-tab active" type="button" data-workspace-target="overview">總覽</button>
+          <button class="workspace-tab" type="button" data-workspace-target="audiences">名單群組</button>
+          <button class="workspace-tab" type="button" data-workspace-target="templates">郵件範本</button>
+          <button class="workspace-tab" type="button" data-workspace-target="campaigns">活動寄送</button>
+          <button class="workspace-tab" type="button" data-workspace-target="reports">報表中心</button>
+          <button class="workspace-tab" type="button" data-workspace-target="operations">維運管理</button>
+        </nav>
+
+        <div class="workspace-panel" data-workspace-panel="overview">
+        <div class="summary-grid">
+          <article class="metric-card">
+            <span>目前階段</span>
+            <strong id="currentPhaseMetric">5 / 5</strong>
+            <small>Local Pilot complete loop</small>
+          </article>
+          <article class="metric-card">
+            <span>已完成項目</span>
+            <strong id="readyCount">—</strong>
+            <small id="readinessTotal">載入中</small>
+          </article>
+          <article class="metric-card safe">
+            <span>郵件傳送</span>
+            <strong id="mailMetric">未就緒</strong>
+            <small>連接器 + 核准 + 排程</small>
+          </article>
+          <article class="metric-card">
+            <span>登入身分</span>
+            <strong id="currentUser">—</strong>
+            <small id="currentRole">—</small>
+          </article>
+        </div>
+
+        <div class="content-grid">
+          <section class="panel checklist-panel">
+            <div class="panel-heading">
+              <div>
+                <span class="step-label">Readiness</span>
+                <h2>建置準備度</h2>
+              </div>
+              <span class="phase-pill">階段式驗收</span>
+            </div>
+            <div id="readinessList" class="readiness-list"></div>
+          </section>
+
+          <section id="settingsPanel" class="panel settings-panel">
+            <div class="panel-heading">
+              <div>
+                <span class="step-label">Local settings</span>
+                <h2>客戶範圍基線</h2>
+              </div>
+            </div>
+            <form id="settingsForm">
+              <label>
+                組織名稱
+                <input name="organizationName" minlength="2" maxlength="120" required>
+              </label>
+              <div class="field-row">
+                <label>
+                  時區
+                  <input name="timezone" value="Asia/Taipei" required>
+                </label>
+                <label>
+                  保存期限（天）
+                  <input name="retentionDays" type="number" min="30" max="3650" required>
+                </label>
+              </div>
+              <label>
+                內部收件網域
+                <textarea name="recipientDomains" rows="3" placeholder="customer.example&#10;subsidiary.example"></textarea>
+                <small>每行一個；後續活動收件者只能屬於此清單。</small>
+              </label>
+              <label>
+                核准寄件網域
+                <textarea name="senderDomains" rows="3" placeholder="awareness.customer.example"></textarea>
+                <small>只登錄客戶擁有的網域；Phase 3 仍需驗證 DNS 與 connector。</small>
+              </label>
+              <label>
+                測試信箱 allowlist
+                <textarea name="testRecipientEmails" rows="3" placeholder="awareness-test@customer.example"></textarea>
+                <small>必須屬於上方內部收件網域。</small>
+              </label>
+              <button class="button primary" type="submit">儲存範圍設定</button>
+              <p class="form-message" data-form-message></p>
+            </form>
+          </section>
+        </div>
+
+        <section class="next-phase">
+          <div><span class="eyebrow">Pilot boundary</span><h2>功能已建置，客戶秘密仍未設定</h2></div>
+          <p>可先用 pickup 完成全流程；SMTP、公開 TLS、服務帳號與備份位置留到客戶端一次性設定。</p>
+        </section>
+        </div>
+
+        <section class="workspace-panel hidden" data-workspace-panel="audiences">
+          <div class="section-intro">
+            <div>
+              <span class="eyebrow">Audience workspace</span>
+              <h2>名單群組與內部範圍</h2>
+            </div>
+            <p>CSV／XLSX 中只有符合「內部收件網域」的 Email 會被接受；錯誤列、重複列與偵測格式會顯示於匯入摘要。</p>
+          </div>
+          <div class="workspace-split">
+            <section class="panel">
+              <div class="panel-heading">
+                <div>
+                  <span class="step-label">Groups</span>
+                  <h2>名單群組</h2>
+                </div>
+              </div>
+              <form id="groupForm">
+                <label>
+                  群組名稱
+                  <input name="name" minlength="2" maxlength="100" placeholder="2026 Q3 演練測試名單" required>
+                </label>
+                <label>
+                  說明
+                  <textarea name="description" rows="2" maxlength="500" placeholder="範圍與名單來源"></textarea>
+                </label>
+                <button class="button primary" type="submit">建立群組</button>
+                <p class="form-message" data-form-message></p>
+              </form>
+              <div id="groupList" class="item-list"></div>
+            </section>
+
+            <section class="panel">
+              <div class="panel-heading">
+                <div>
+                  <span class="step-label">CSV import</span>
+                  <h2>匯入收件名單</h2>
+                </div>
+                <span class="phase-pill">最大 1 MB／20,000 筆</span>
+              </div>
+              <form id="rosterImportForm">
+                <label>
+                  目標群組
+                  <select id="csvGroupSelect" name="groupId" required></select>
+                </label>
+                <label>
+                  CSV／XLSX 檔案
+                  <input name="rosterFile" type="file" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required>
+                  <small>支援 UTF-8 CSV 與 XLSX 第一個工作表；可使用標題欄位，或無標題 A=部門、B=姓名、C=Email、D=部群／廠區格式。</small>
+                </label>
+                <button class="button primary" type="submit">檢查並匯入</button>
+                <p class="form-message" data-form-message></p>
+              </form>
+              <div id="importResult" class="result-note hidden"></div>
+              <div class="table-heading">
+                <h3 id="selectedGroupHeading">尚未選擇群組</h3>
+                <small id="selectedGroupMeta"></small>
+              </div>
+              <div class="table-scroll">
+                <table>
+                  <thead>
+                    <tr><th>姓名</th><th>Email</th><th>部群</th><th>部門</th></tr>
+                  </thead>
+                  <tbody id="recipientTableBody"></tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <section class="workspace-panel hidden" data-workspace-panel="templates">
+          <div class="section-intro">
+            <div>
+              <span class="eyebrow">Template studio</span>
+              <h2>版本化郵件範本</h2>
+            </div>
+            <p>所有內容先經伺服器清理。HTTP 連結改為 <code>{{training_url}}</code>，圖片、表單、腳本與外部樣式不會在預覽中載入。</p>
+          </div>
+          <div class="template-grid">
+            <div class="stack">
+              <section class="panel" data-manage-templates>
+                <div class="panel-heading">
+                  <div>
+                    <span class="step-label">EML quarantine import</span>
+                    <h2>匯入既有 EML</h2>
+                  </div>
+                </div>
+                <form id="emlImportForm">
+                  <label>
+                    EML 郵件檔案
+                    <input name="emlFile" type="file" accept=".eml,message/rfc822" required>
+                    <small>最大 10 MB；不保存原始郵件與收寄件／傳輸標頭。</small>
+                  </label>
+                  <button class="button primary" type="submit">隔離清理並建立範本</button>
+                  <p class="form-message" data-form-message></p>
+                </form>
+              </section>
+
+              <section class="panel" data-manage-templates>
+                <div class="panel-heading">
+                  <div>
+                    <span class="step-label">Manual template</span>
+                    <h2>建立手動範本</h2>
+                  </div>
+                </div>
+                <form id="templateForm">
+                  <label>範本名稱<input name="name" minlength="2" maxlength="120" required></label>
+                  <label>郵件主旨<input name="subject" maxlength="200" required></label>
+                  <label>
+                    HTML
+                    <textarea name="htmlBody" rows="8" placeholder="&lt;p&gt;請完成安全意識訓練：&lt;a href=&quot;{{training_url}}&quot;&gt;開啟說明&lt;/a&gt;&lt;/p&gt;"></textarea>
+                  </label>
+                  <label>純文字<textarea name="textBody" rows="4" placeholder="請完成安全意識訓練：{{training_url}}"></textarea></label>
+                  <button class="button primary" type="submit">建立 Draft</button>
+                  <p class="form-message" data-form-message></p>
+                </form>
+              </section>
+
+              <section class="panel">
+                <div class="panel-heading">
+                  <div><span class="step-label">Library</span><h2>範本清單</h2></div>
+                </div>
+                <div id="templateList" class="item-list"></div>
+              </section>
+            </div>
+
+            <section id="templateDetailPanel" class="panel template-detail">
+              <div class="panel-heading">
+                <div>
+                  <span class="step-label">Offline preview</span>
+                  <h2 id="templateDetailHeading">選擇一個範本</h2>
+                </div>
+                <span id="templateVersionBadge" class="phase-pill">—</span>
+              </div>
+              <iframe id="templatePreview" class="template-preview" title="清理後郵件範本預覽" sandbox referrerpolicy="no-referrer"></iframe>
+              <div id="sanitizationSummary" class="summary-pairs"></div>
+              <div>
+                <h3>附件處理</h3>
+                <div id="attachmentList" class="attachment-list"></div>
+              </div>
+              <form id="templateVersionForm" class="version-form hidden">
+                <h3>建立下一版本</h3>
+                <label>郵件主旨<input name="subject" maxlength="200" required></label>
+                <label>視覺化 HTML 編輯器</label>
+                <div class="editor-toolbar" role="toolbar" aria-label="範本格式">
+                  <button type="button" data-editor-command="bold">粗體</button>
+                  <button type="button" data-editor-command="italic">斜體</button>
+                  <button type="button" data-editor-command="insertUnorderedList">清單</button>
+                  <button type="button" data-editor-placeholder="{{training_url}}">訓練連結</button>
+                  <button type="button" data-editor-placeholder="{{recipient_name}}">收件人姓名</button>
+                </div>
+                <div id="visualTemplateEditor" class="visual-editor" contenteditable="true" role="textbox" aria-multiline="true"></div>
+                <textarea name="htmlBody" class="hidden" aria-hidden="true"></textarea>
+                <label>純文字<textarea name="textBody" rows="4"></textarea></label>
+                <button class="button primary" type="submit">儲存新版本</button>
+                <p class="form-message" data-form-message></p>
+              </form>
+              <section id="templateReviewPanel" class="review-box hidden">
+                <h3>雙人覆核</h3>
+                <p id="templateReviewStatus">Draft 可由製作者送審，必須由不同帳號核准。</p>
+                <textarea id="templateReviewComment" rows="2" maxlength="1000" placeholder="送審說明或退回原因"></textarea>
+                <div class="button-row">
+                  <button id="submitTemplateReview" class="button primary" type="button">送交審核</button>
+                  <button id="approveTemplateReview" class="button" type="button">核准</button>
+                  <button id="rejectTemplateReview" class="button danger" type="button">退回</button>
+                </div>
+              </section>
+            </section>
+          </div>
+        </section>
+
+        <section class="workspace-panel hidden" data-workspace-panel="campaigns">
+          <div class="section-intro"><div><span class="eyebrow">Campaign control</span><h2>連接器與演練活動</h2></div><p>先用 pickup 產生本機 EML 驗證全流程；SMTP 只在客戶完成一次性秘密與 TLS 設定後使用。</p></div>
+          <div class="workspace-split">
+            <div class="stack">
+              <section id="connectorPanel" class="panel">
+                <div class="panel-heading"><div><span class="step-label">Mail connector</span><h2>建立連接器</h2></div></div>
+                <form id="connectorForm">
+                  <div class="field-row"><label>名稱<input name="name" maxlength="100" required></label><label>類型<select name="connectorType"><option value="pickup">本機 pickup</option><option value="smtp">SMTP / STARTTLS</option></select></label></div>
+                  <div class="field-row"><label>寄件顯示名稱<input name="senderName" maxlength="120" required></label><label>寄件 Email<input name="senderEmail" type="email" required></label></div>
+                  <fieldset class="smtp-fields"><legend>SMTP 一次性設定（pickup 可留空）</legend><div class="field-row"><label>Host<input name="host"></label><label>Port<input name="port" type="number" min="1" max="65535" value="587"></label></div><div class="field-row"><label>帳號<input name="username" autocomplete="off"></label><label>密碼<input name="password" type="password" autocomplete="new-password"></label></div><label class="check-line"><input name="secure" type="checkbox"> 使用 implicit TLS（通常 Port 465；未勾選仍強制 STARTTLS）</label></fieldset>
+                  <button class="button primary" type="submit">建立 Draft 連接器</button><p class="form-message" data-form-message></p>
+                </form>
+                <form id="connectorVerifyForm" class="inline-form"><select id="connectorVerifySelect" name="connectorId"></select><input name="testRecipientEmail" type="email" placeholder="allowlist 測試信箱" required><button class="button" type="submit">驗證並寄測試信</button><p class="form-message" data-form-message></p></form>
+                <div id="connectorList" class="item-list"></div>
+              </section>
+
+              <section id="campaignBuilderPanel" class="panel">
+                <div class="panel-heading"><div><span class="step-label">Campaign builder</span><h2>建立演練活動</h2></div></div>
+                <form id="campaignForm">
+                  <label>活動名稱<input name="name" maxlength="120" required></label>
+                  <div class="field-row"><label>已核准範本<select id="campaignTemplateSelect" name="templateId" required></select></label><label>收件群組<select id="campaignGroupSelect" name="recipientGroupId" required></select></label></div>
+                  <label>已驗證連接器<select id="campaignConnectorSelect" name="connectorId" required></select></label>
+                  <label>追蹤基底網址<input name="baseUrl" value="http://localhost:4280" required><small>非本機環境必須使用客戶擁有的 HTTPS 網址。</small></label>
+                  <div class="field-row"><label>時窗開始<input name="sendWindowStart" type="time" value="08:00" required></label><label>時窗結束<input name="sendWindowEnd" type="time" value="18:00" required></label></div>
+                  <label>每分鐘上限<input name="throttlePerMinute" type="number" min="1" max="600" value="30" required></label>
+                  <label class="check-line"><input name="testOnly" type="checkbox" checked> 只寄給設定頁 allowlist 測試信箱</label>
+                  <button class="button primary" type="submit">建立 Draft 活動</button><p class="form-message" data-form-message></p>
+                </form>
+              </section>
+            </div>
+
+            <div class="stack">
+              <section class="panel"><div class="panel-heading"><div><span class="step-label">Campaign library</span><h2>活動清單</h2></div></div><div id="campaignList" class="item-list"></div></section>
+              <section id="campaignDetail" class="panel hidden">
+                <div class="panel-heading"><div><span class="step-label">Review & delivery</span><h2 id="campaignDetailHeading">活動</h2></div><span id="campaignStatus" class="phase-pill">—</span></div>
+                <div id="campaignMetrics" class="summary-pairs"></div>
+                <div id="campaignApprovalSummary" class="result-note"></div>
+                <textarea id="campaignReviewComment" rows="2" maxlength="1000" placeholder="送審說明或退回原因"></textarea>
+                <div class="button-row"><button id="submitCampaignReview" class="button primary" type="button">送交審核</button><button id="approveCampaignReview" class="button" type="button">核准</button><button id="rejectCampaignReview" class="button danger" type="button">退回</button></div>
+                <div class="button-row"><button id="scheduleCampaign" class="button primary" type="button">立即排程</button><button id="processQueue" class="button" type="button">處理本批佇列</button><button id="pauseCampaign" class="button" type="button">暫停</button><button id="cancelCampaign" class="button danger" type="button">取消</button></div>
+                <button id="generateCampaignReport" class="button full" type="button">產生 Excel／Word／JSON 報告</button>
+                <form id="evidenceImportForm" class="review-box hidden">
+                  <h3>匯入客戶稽核證據</h3>
+                  <label>來源參照<input name="sourceReference" maxlength="300" placeholder="郵件閘道匯出檔／工單編號" required></label>
+                  <label>來源檔案 SHA-256<input name="sourceDigest" minlength="64" maxlength="64" pattern="[A-Fa-f0-9]{64}" required></label>
+                  <label>事件 JSON 陣列<textarea name="events" rows="6" placeholder='[{"sourceEventId":"evt-1","email":"user@customer.example","eventType":"attachment_opened","attachmentId":"...","occurredAt":"2026-08-27T01:00:00.000Z"}]' required></textarea></label>
+                  <button class="button" type="submit">驗證並匯入</button>
+                  <p class="form-message" data-form-message></p>
+                </form>
+              </section>
+            </div>
+          </div>
+        </section>
+
+        <section class="workspace-panel hidden" data-workspace-panel="reports">
+          <div class="section-intro"><div><span class="eyebrow">Reporting center</span><h2>原生報表與外部 rawdata 相容匯入</h2></div><p>Excel 保留權限控管下的逐人與 rawdata；Word 只輸出彙總。正式率只有在分母明確時才計算。</p></div>
+          <div class="workspace-split">
+            <section id="vendorReportPanel" class="panel"><div class="panel-heading"><div><span class="step-label">Vendor compatibility</span><h2>匯入 rawdata.xlsx</h2></div></div><form id="vendorReportForm"><label>來源 XLSX<input name="rawdataFile" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required></label><label>活動名稱<input name="campaignName" maxlength="120" required></label><label>完整寄送人數（選填）<input name="targetCount" type="number" min="1"></label><button class="button primary" type="submit">產生三種報表</button><p class="form-message" data-form-message></p></form></section>
+            <section class="panel"><div class="panel-heading"><div><span class="step-label">Artifacts</span><h2>本次產出</h2></div></div><div id="artifactList" class="artifact-list"></div><div id="reportWarnings" class="result-note hidden"></div></section>
+          </div>
+        </section>
+
+        <section class="workspace-panel hidden" data-workspace-panel="operations">
+          <div class="section-intro"><div><span class="eyebrow">Operations</span><h2>使用者、緊急停止與稽核</h2></div><p>system_admin 建立獨立審核者；緊急停止會阻止新寄送，稽核匯出附 SHA-256 雜湊鏈。</p></div>
+          <div class="workspace-split">
+            <section class="panel"><div class="panel-heading"><div><span class="step-label">RBAC</span><h2>建立使用者</h2></div></div><form id="userForm"><div class="field-row"><label>帳號<input name="username" required></label><label>顯示名稱<input name="displayName" required></label></div><label>角色<select name="role"><option value="campaign_creator">活動建立者</option><option value="reviewer">獨立審核者</option><option value="report_viewer">報表檢視者</option><option value="system_admin">系統管理員</option></select></label><label>初始密碼<input name="password" type="password" minlength="12" required></label><button class="button primary" type="submit">建立帳號</button><p class="form-message" data-form-message></p></form><div id="userList" class="item-list"></div></section>
+            <section class="panel"><div class="panel-heading"><div><span class="step-label">Safety controls</span><h2>寄送控制</h2></div></div><div id="emergencyState" class="result-note">載入中</div><div class="button-row"><button id="enableEmergencyStop" class="button danger" type="button">啟用緊急停止</button><button id="disableEmergencyStop" class="button" type="button">解除緊急停止</button></div><form id="suppressionForm"><h3>收件人抑制清單</h3><label>Email<input name="email" type="email" required></label><label>原因<input name="reason" maxlength="300" required></label><button class="button" type="submit">加入抑制並停止後續寄送</button><p class="form-message" data-form-message></p></form><a class="button full" href="/api/audit/export" target="_blank" rel="noopener">下載稽核 JSON</a><p class="safe-note">此雜湊鏈驗證匯出檔內的一致性，不等同外部可信時間戳。備份還原與 Windows Service 使用專案 scripts 目錄中的 PowerShell 工具。</p></section>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+  </body>
+</html>
