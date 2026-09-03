@@ -1,9 +1,9 @@
 {
-  "name": "local-awareness-platform",
-  "version": "0.6.0",
+  "name": "enterprise-security-awareness-platform",
+  "version": "0.7.0",
   "private": true,
   "type": "module",
-  "description": "Local-first platform for authorized internal security awareness simulations.",
+  "description": "Tenant-isolated platform for authorized internal security awareness simulations.",
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "check": "tsc -p tsconfig.json --noEmit",
@@ -13,9 +13,13 @@
     "backup": "node scripts/backup-database.mjs",
     "audit:verify": "node scripts/verify-audit.mjs",
     "maintenance": "node scripts/maintenance.mjs",
+    "saas:plan": "npm run build && node scripts/plan-saas-tenant.mjs",
+    "saas:validate": "npm run build && node scripts/plan-saas-tenant.mjs --registry config/saas-tenants.example.json --validate-only",
     "start": "node dist/index.js",
     "test": "npm run build && node --test",
-    "verify": "npm run check && npm test"
+    "test:ci": "npm run build && node scripts/run-ci-tests.mjs",
+    "verify": "npm run check && npm test",
+    "verify:ci": "npm run check && npm run test:ci && npm run saas:validate"
   },
   "engines": {
     "node": ">=24.0.0"

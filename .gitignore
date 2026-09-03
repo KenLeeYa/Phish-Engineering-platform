@@ -4,5 +4,7 @@ dist/
 *.log
 .env
 config/customer-settings.json
+config/saas-tenants.json
 config/*.secret.json
 coverage/
+.deployment-plans/

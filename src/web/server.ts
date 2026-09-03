@@ -16,6 +16,11 @@ import {
 import { TemplateService } from "../application/template-service.js";
 import { ReportService } from "../application/report-service.js";
 import { PROJECT_ROOT } from "../config.js";
+import {
+  LOCAL_RUNTIME_LIMITS,
+  type DeploymentMode,
+  type RuntimeLimits,
+} from "../domain/saas.js";
 import { classifyTrackingRequest, clientFingerprintHash } from "../domain/tracking.js";
 import { CampaignStore } from "../infrastructure/campaign-store.js";
 import { ContentStore } from "../infrastructure/content-store.js";
@@ -33,6 +38,12 @@ import {
 } from "./cookies.js";
 
 export interface CreateAppOptions {
+  deploymentMode?: DeploymentMode;
+  tenantId?: string;
+  tenantSlug?: string;
+  dataRegion?: string;
+  tenantConfigDigest?: string;
+  limits?: RuntimeLimits;
   databasePath: string;
   allowedAdminHosts?: string[];
   allowedTrackingHosts?: string[];
@@ -175,6 +186,7 @@ export async function createApp(options: CreateAppOptions): Promise<FastifyInsta
   const contentStore = new ContentStore(store.database);
   const campaignStore = new CampaignStore(store.database);
   const reportStore = new ReportStore(store.database);
+  const limits = options.limits ?? LOCAL_RUNTIME_LIMITS;
   const sessionTtlMs = options.sessionTtlMs ?? 8 * 60 * 60 * 1000;
   const service = new PlatformService(store, sessionTtlMs);
   const audienceService = new AudienceService(contentStore, () => service.getSettings());
@@ -194,12 +206,14 @@ export async function createApp(options: CreateAppOptions): Promise<FastifyInsta
     secretVault,
     mailTransport,
     new Set(options.allowedTrackingOrigins ?? ["http://localhost", "https://localhost", "http://127.0.0.1", "https://127.0.0.1"]),
+    limits,
   );
   const reportService = new ReportService(
     campaignStore,
     reportStore,
     new SpreadsheetRuntime(),
     reportDirectory,
+    limits.maxReportArtifacts,
   );
   const trackingSalt = crypto.randomBytes(32);
   const secureCookies = options.secureCookies ?? false;
@@ -300,9 +314,18 @@ export async function createApp(options: CreateAppOptions): Promise<FastifyInsta
 
   app.get("/api/health", async () => ({
     status: "ok",
-    service: "local-awareness-platform",
-    version: "0.6.0-local-pilot",
+    service: "security-awareness-platform",
+    version: "0.7.0-saas-cell-foundation",
     phase: 5,
+    deploymentMode: options.deploymentMode ?? "local_single_tenant",
+    ...(options.tenantId ? {
+      tenant: {
+        id: options.tenantId,
+        slug: options.tenantSlug,
+        dataRegion: options.dataRegion,
+        configDigest: options.tenantConfigDigest,
+      },
+    } : {}),
     mailSendingEnabled: mailSendingEnabled(),
     emergencyStop: store.getDeliveryControl().emergencyStop,
   }));

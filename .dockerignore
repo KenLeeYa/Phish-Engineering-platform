@@ -1,0 +1,10 @@
+.git
+.github
+.local-data
+config/*.secret.json
+coverage
+dist
+node_modules
+*.log
+.env
+tests

@@ -37,6 +37,8 @@ test("local core supports one-time setup, guarded settings, login and logout", a
   assert.equal(health.statusCode, 200);
   assert.equal(health.json().mailSendingEnabled, false);
   assert.equal(health.json().phase, 5);
+  assert.equal(health.json().deploymentMode, "local_single_tenant");
+  assert.equal(health.json().tenant, undefined);
 
   const beforeSetup = await app.inject({ method: "GET", url: "/api/bootstrap" });
   assert.deepEqual(beforeSetup.json(), { setupRequired: true, authenticated: false });
@@ -150,4 +152,33 @@ test("local core supports one-time setup, guarded settings, login and logout", a
   });
   assert.equal(login.statusCode, 200, login.body);
   assert.ok(cookieHeader(login).includes("sea_session="));
+});
+
+test("SaaS health exposes tenant identity without runtime paths or secrets", async (context) => {
+  const app = await createApp({
+    databasePath: ":memory:",
+    allowedAdminHosts: ["admin.customer.example"],
+    allowedTrackingHosts: ["training.customer.example"],
+    allowedTrackingOrigins: ["https://training.customer.example"],
+    deploymentMode: "saas_tenant_cell",
+    tenantId: "tenant-demo-001",
+    tenantSlug: "demo-enterprise",
+    dataRegion: "tw-north-1",
+    tenantConfigDigest: "a".repeat(64),
+  });
+  context.after(() => app.close());
+
+  const response = await app.inject({
+    method: "GET",
+    url: "/api/health",
+    headers: { host: "admin.customer.example" },
+  });
+  assert.equal(response.statusCode, 200, response.body);
+  assert.deepEqual(response.json().tenant, {
+    id: "tenant-demo-001",
+    slug: "demo-enterprise",
+    dataRegion: "tw-north-1",
+    configDigest: "a".repeat(64),
+  });
+  assert.doesNotMatch(response.body, /database|vault|bootstrap|masterKey/i);
 });

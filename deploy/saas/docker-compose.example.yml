@@ -1,0 +1,63 @@
+name: security-awareness-tenant-cell
+
+services:
+  app:
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+    image: "${SEA_IMAGE:-security-awareness-platform:local}"
+    init: true
+    restart: unless-stopped
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    ports:
+      - "127.0.0.1:${SEA_PUBLIC_PORT:-4280}:4280"
+    environment:
+      NODE_ENV: production
+      SEA_DEPLOYMENT_MODE: saas_tenant_cell
+      SEA_BIND_HOST: 0.0.0.0
+      SEA_PORT: "4280"
+      SEA_ALLOW_REMOTE_ADMIN: "true"
+      SEA_SECURE_COOKIES: "true"
+      SEA_REMOTE_HTTPS_PROXY: "true"
+      SEA_WORKER_ENABLED: "true"
+      SEA_TENANT_ID: "${SEA_TENANT_ID:?required}"
+      SEA_TENANT_SLUG: "${SEA_TENANT_SLUG:?required}"
+      SEA_DATA_REGION: "${SEA_DATA_REGION:?required}"
+      SEA_TENANT_CONFIG_DIGEST: "${SEA_TENANT_CONFIG_DIGEST:?required}"
+      SEA_TENANT_DATA_ROOT: /tenant
+      SEA_DATABASE_PATH: /tenant/database/platform.sqlite
+      SEA_PICKUP_DIRECTORY: /tenant/pickup
+      SEA_REPORT_DIRECTORY: /tenant/reports
+      SEA_SECRET_VAULT_PATH: /tenant/vault/secrets.vault.json
+      SEA_BOOTSTRAP_TOKEN_FILE: /run/secrets/bootstrap_token
+      SEA_MASTER_KEY_FILE: /run/secrets/master_key
+      SEA_ADMIN_HOSTNAMES: "${SEA_ADMIN_HOSTNAMES:?required}"
+      SEA_TRACKING_ORIGINS: "${SEA_TRACKING_ORIGINS:?required}"
+      SEA_MAX_ACTIVE_CAMPAIGNS: "${SEA_MAX_ACTIVE_CAMPAIGNS:?required}"
+      SEA_MAX_RECIPIENTS_PER_CAMPAIGN: "${SEA_MAX_RECIPIENTS_PER_CAMPAIGN:?required}"
+      SEA_MAX_MONTHLY_MESSAGES: "${SEA_MAX_MONTHLY_MESSAGES:?required}"
+      SEA_MAX_REPORT_ARTIFACTS: "${SEA_MAX_REPORT_ARTIFACTS:?required}"
+      SEA_MAX_THROTTLE_PER_MINUTE: "${SEA_MAX_THROTTLE_PER_MINUTE:?required}"
+      SEA_ARTIFACT_TOOL_MODULE: /opt/artifact-runtime/dist/artifact_tool.mjs
+    volumes:
+      - tenant_data:/tenant
+      - "${SEA_ARTIFACT_RUNTIME_DIRECTORY:?required}:/opt/artifact-runtime:ro"
+    secrets:
+      - bootstrap_token
+      - master_key
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+
+secrets:
+  bootstrap_token:
+    file: "${SEA_BOOTSTRAP_SECRET_FILE:?required}"
+  master_key:
+    file: "${SEA_MASTER_KEY_SECRET_FILE:?required}"
+
+volumes:
+  tenant_data:
+    name: "sea-${SEA_TENANT_ID:?required}-data"

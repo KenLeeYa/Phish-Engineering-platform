@@ -3,6 +3,12 @@ import { createApp } from "./web/server.js";
 
 const runtime = readRuntimeConfig();
 const app = await createApp({
+  deploymentMode: runtime.deploymentMode,
+  tenantId: runtime.tenantId,
+  tenantSlug: runtime.tenantSlug,
+  dataRegion: runtime.dataRegion,
+  tenantConfigDigest: runtime.tenantConfigDigest,
+  limits: runtime.limits,
   databasePath: runtime.databasePath,
   allowedAdminHosts: runtime.allowedAdminHosts,
   allowedTrackingHosts: runtime.allowedTrackingHosts,
@@ -20,7 +26,7 @@ const app = await createApp({
 });
 
 await app.listen({ host: runtime.host, port: runtime.port });
-console.log(`Local Awareness Platform 已啟動：http://${runtime.host}:${runtime.port}`);
+console.log(`Security Awareness Platform 已啟動：http://${runtime.host}:${runtime.port}`);
 console.log("寄信能力由已驗證連接器與緊急停止狀態動態決定。");
 
 let closing = false;
