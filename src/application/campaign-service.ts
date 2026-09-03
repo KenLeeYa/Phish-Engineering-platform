@@ -2,6 +2,11 @@ import crypto from "node:crypto";
 import type { PlatformSettings } from "../domain/settings.js";
 import { hashToken } from "../domain/security.js";
 import {
+  SaaSQuotaExceededError,
+  assertQuotaAvailable,
+  type RuntimeLimits,
+} from "../domain/saas.js";
+import {
   CampaignConflictError,
   CampaignNotFoundError,
   CampaignStore,
@@ -136,6 +141,7 @@ export class CampaignService {
     private readonly vault: SecretVault,
     private readonly mail: MailTransport,
     private readonly allowedTrackingOrigins: ReadonlySet<string>,
+    private readonly limits: RuntimeLimits,
   ) {}
 
   listConnectors(includeConfig = false) {
@@ -236,6 +242,7 @@ export class CampaignService {
   }
 
   createCampaign(user: PublicUser, input: unknown): CampaignDetail {
+    this.assertQuota("進行中活動數", this.store.activeCampaignCount(), 1, this.limits.maxActiveCampaigns);
     const record = recordFrom(input);
     const name = textField(record.name, "活動名稱", 2, 120);
     const templateId = textField(record.templateId, "範本", 1, 80);
@@ -247,8 +254,12 @@ export class CampaignService {
       throw new AppError(400, "INVALID_SEND_WINDOW", "寄送時窗必須使用 HH:mm 格式。");
     }
     const throttlePerMinute = Number(record.throttlePerMinute ?? 30);
-    if (!Number.isInteger(throttlePerMinute) || throttlePerMinute < 1 || throttlePerMinute > 600) {
-      throw new AppError(400, "INVALID_THROTTLE", "每分鐘寄送量必須介於 1 到 600。");
+    if (!Number.isInteger(throttlePerMinute) || throttlePerMinute < 1 || throttlePerMinute > this.limits.maxThrottlePerMinute) {
+      throw new AppError(
+        400,
+        "INVALID_THROTTLE",
+        `每分鐘寄送量必須介於 1 到 ${this.limits.maxThrottlePerMinute}。`,
+      );
     }
     if (typeof record.testOnly !== "boolean") {
       throw new AppError(400, "INVALID_TEST_MODE", "testOnly 必須是布林值。");
@@ -285,6 +296,7 @@ export class CampaignService {
       if (!recipients.length) {
         throw new AppError(409, "NO_REVIEW_TARGETS", "目前核准範圍內沒有可送審的收件人。");
       }
+      this.assertQuota("單一活動收件人數", 0, recipients.length, this.limits.maxRecipientsPerCampaign);
       this.assertCampaignScope(campaign, recipients);
       return this.store.submitCampaignReview({
         id: crypto.randomUUID(),
@@ -332,11 +344,21 @@ export class CampaignService {
     if (!recipients.length) {
       throw new AppError(409, "NO_APPROVED_TARGETS", "活動沒有核准的收件人快照。");
     }
+    this.assertQuota("單一活動收件人數", 0, recipients.length, this.limits.maxRecipientsPerCampaign);
     this.assertCampaignScope(campaign, recipients);
     if (campaignApprovalDigest(campaign, recipients) !== approved.approvalDigest) {
       throw new AppError(409, "APPROVAL_DIGEST_MISMATCH", "活動核准內容不一致，請重新送審。");
     }
     const start = Date.parse(scheduledAt);
+    const scheduledDate = new Date(start);
+    const monthStart = new Date(Date.UTC(scheduledDate.getUTCFullYear(), scheduledDate.getUTCMonth(), 1)).toISOString();
+    const monthEnd = new Date(Date.UTC(scheduledDate.getUTCFullYear(), scheduledDate.getUTCMonth() + 1, 1)).toISOString();
+    this.assertQuota(
+      "每月排程郵件數",
+      this.store.committedDeliveryCountBetween(monthStart, monthEnd),
+      recipients.length,
+      this.limits.maxMonthlyMessages,
+    );
     const observationDays = Math.min(this.getSettings().organization.retentionDays, 90);
     const expiresAt = new Date(start + observationDays * 86_400_000).toISOString();
     const targets = recipients.map((recipient, index) => {
@@ -576,5 +598,16 @@ export class CampaignService {
     if (error instanceof CampaignNotFoundError) throw new AppError(404, "CAMPAIGN_RESOURCE_NOT_FOUND", error.message);
     if (error instanceof CampaignConflictError) throw new AppError(409, "CAMPAIGN_CONFLICT", error.message);
     throw error;
+  }
+
+  private assertQuota(label: string, current: number, requested: number, maximum: number): void {
+    try {
+      assertQuotaAvailable(label, current, requested, maximum);
+    } catch (error) {
+      if (error instanceof SaaSQuotaExceededError) {
+        throw new AppError(409, "TENANT_QUOTA_EXCEEDED", error.message);
+      }
+      throw error;
+    }
   }
 }

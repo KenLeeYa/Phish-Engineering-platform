@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "tenants": [
+    {
+      "schemaVersion": 1,
+      "tenantId": "tenant-demo-001",
+      "slug": "demo-enterprise",
+      "displayName": "示範企業",
+      "dataRegion": "tw-north-1",
+      "lifecycle": {
+        "status": "approved",
+        "requestedBy": "requester@example.com",
+        "requestedAt": "2026-09-01T01:00:00.000Z",
+        "approvedBy": "approver@example.com",
+        "approvedAt": "2026-09-01T02:00:00.000Z"
+      },
+      "domains": {
+        "adminHost": "awareness-admin.example.com",
+        "trackingHost": "awareness-training.example.com",
+        "recipientDomains": ["employees.example.com"],
+        "senderDomains": ["training-mail.example.com"]
+      },
+      "identity": {
+        "provider": "oidc",
+        "issuer": "https://identity.example.com/",
+        "clientId": "security-awareness-demo",
+        "clientSecretRef": "secret://environment/SEA_OIDC_CLIENT_SECRET",
+        "redirectUri": "https://awareness-admin.example.com/api/auth/oidc/callback",
+        "roleClaim": "security_awareness_roles"
+      },
+      "delivery": {
+        "provider": "aws_ses",
+        "credentialRef": "secret://aws-secrets-manager/security-awareness/demo/delivery",
+        "webhookSecretRef": "secret://aws-secrets-manager/security-awareness/demo/webhook"
+      },
+      "platformSecrets": {
+        "bootstrapTokenRef": "secret://aws-secrets-manager/security-awareness/demo/bootstrap",
+        "masterKeyRef": "secret://aws-secrets-manager/security-awareness/demo/master-key"
+      },
+      "limits": {
+        "maxActiveCampaigns": 25,
+        "maxRecipientsPerCampaign": 5000,
+        "maxMonthlyMessages": 50000,
+        "maxReportArtifacts": 3000,
+        "maxThrottlePerMinute": 120
+      },
+      "retention": {
+        "recipientDays": 365,
+        "eventDays": 365,
+        "auditDays": 1095
+      },
+      "contacts": {
+        "securityEmail": "security@example.com",
+        "privacyEmail": "privacy@example.com",
+        "operationsEmail": "operations@example.com"
+      }
+    }
+  ]
+}

@@ -2,7 +2,7 @@
 
 ## 部署形態
 
-Local Pilot 採 TypeScript 模組化單體，部署於客戶控制的 Windows VM／伺服器，單租戶、SQLite、無 SaaS 執行依賴。這讓第一版的備份、故障排除與更新成本可控；只有量測到多機高可用、SQLite lock、報表與寄送互相影響或跨客戶多租戶需求後，才升級 PostgreSQL／獨立 worker。
+核心採 TypeScript 模組化單體，支援 `local_single_tenant` 與 `saas_tenant_cell` 兩種模式。兩者在一個執行程序內都只服務一個 tenant；SaaS 由宣告式 registry 與 orchestrator 建立多個隔離 cell，不共享 SQLite、vault、報表或備份。只有容量、高可用與實測 lock 指標達到升級條件後，單一 cell 才改用 managed PostgreSQL／獨立 queue 與 worker。
 
 ```text
 管理者瀏覽器 ──HTTPS／管理網段──> 管理 hostname ──> Fastify 管理 API
@@ -26,11 +26,11 @@ Local Pilot 採 TypeScript 模組化單體，部署於客戶控制的 Windows VM
 
 ## 模組責任
 
-- `domain`：設定、RBAC、密碼與 token、範本清理、附件 allowlist、事件分類、報表語意。
+- `domain`：設定、RBAC、密碼與 token、範本清理、附件 allowlist、事件分類、報表語意，以及 `saas.ts` 的 tenant manifest／配額契約。
 - `application`：帳號生命週期、名單、範本覆核、活動、寄送、安全事件、稽核匯入與報表流程。
 - `infrastructure`：SQLite migration、不可變核准快照、AES-256-GCM vault、pickup／SMTP、試算表 runtime、artifact storage。
 - `web`：Fastify API、安全標頭、Host 分流、管理 UI、訓練頁及最小公開端點。
-- `scripts`：資料庫檢查、備份、還原、完整 retention、audit 驗證、Windows Service。
+- `scripts`：資料庫檢查、備份、還原、完整 retention、audit 驗證、Windows Service，以及 no-secret SaaS deployment plan。
 
 ## 身分與授權
 
@@ -91,4 +91,6 @@ Retention 預設 dry-run；apply 會依設定保存天數處理 session、事件
 
 ## SaaS 邊界
 
-目前不是多租戶 SaaS。未來若轉為 SaaS，需要重新設計 tenant key／資料庫隔離、租戶金鑰、集中身分、配額、資料區域、跨租戶測試、事件匯入信任、on-call 與法遵；不能把目前單租戶程式只加一個 `tenant_id` 就宣稱完成。
+`0.7.0` 已建立 SaaS tenant-cell foundation：tenant manifest、maker-checker、跨 tenant 網域碰撞檢查、隔離 data root、manifest digest、secret reference、runtime 配額、容器與 CI。詳細契約見 `docs/SAAS_ARCHITECTURE.md`。
+
+目前仍不是 Production Ready 多租戶服務。OIDC runtime、雲端郵件 adapter、集中 control plane／reconciler、managed database／queue／object storage、WORM audit、on-call、DR 與法遵需分階段完成並取得真實環境證據。任何 cell 都不得用共享資料目錄或只加 `tenant_id` 的方式繞過隔離。

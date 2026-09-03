@@ -415,6 +415,9 @@ function renderDashboard(payload) {
 async function refreshDeliveryState() {
   try {
     const health = await api("/api/health");
+    document.querySelector("#environmentLabel").textContent = health.deploymentMode === "saas_tenant_cell"
+      ? `SaaS 租戶：${health.tenant?.slug ?? health.tenant?.id ?? "未識別"}`
+      : "本機單租戶";
     const ready = health.mailSendingEnabled;
     document.querySelector("#mailMetric").textContent = health.emergencyStop
       ? "緊急停止"

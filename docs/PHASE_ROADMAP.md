@@ -34,7 +34,15 @@
 
 任何 Gate 失敗都不可用廣泛 allowlist、忽略 TLS、共用帳號、關閉 maker-checker 或擴大追蹤網域來通過。
 
-## 後續里程碑（非本次缺漏）
+## SaaS 現代化階段
 
-- 客戶 Pilot 完成後，以實際容量與 lock／CPU／RAM／備份窗口決定是否改 PostgreSQL 或獨立 worker。
-- 只有明確商業需求才規劃多租戶 SaaS；該工作包含租戶隔離、租戶金鑰、集中身分、配額、資料區域、跨租戶測試、on-call 與法遵，視為另一產品里程碑。
+| 階段 | 狀態 | 交付與 Gate |
+|---|---|---|
+| S0 Tenant-cell foundation | 已建置 | Registry schema、maker-checker、網域碰撞、隔離 data root、manifest digest、secret reference、runtime quota、Docker 與 CI |
+| S1 Identity 與 Control Plane | 待建置 | OIDC + PKCE、MFA／group mapping、tenant revision API、reconciler、暫停／撤銷、雙人 promotion |
+| S2 Delivery governance | 待建置 | 雲端 provider adapter、webhook signature、bounce／complaint、idempotency、provider quota、正式 sending access E2E |
+| S3 Managed data plane | 待量測後建置 | 每 tenant PostgreSQL／queue／object storage、KMS、PITR、容量與故障注入；不得共享無隔離證據的 schema |
+| S4 Observability 與法遵 | 待外部核准 | SIEM／WORM、SLO／on-call、DPIA／DPA、subprocessor、資料區域、刪除與事件通報 |
+| S5 Production readiness | 待真實環境驗證 | Staging、跨租戶測試、滲透測試、restore drill、key rotation、供應商退場、Production promotion receipt |
+
+S0 通過代表架構與自動化基礎可重現，不代表 S1 到 S5 已完成。申請項目與先後次序見 `docs/SAAS_APPLICATION_REQUIREMENTS.md`。

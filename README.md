@@ -1,10 +1,14 @@
-# Local Awareness Platform
+# Enterprise Security Awareness Platform
 
-客戶端部署、單租戶、僅供經授權內部安全意識演練使用的企業平台。本專案採用獨立的 runtime、schema 與程式碼。
+僅供經授權內部安全意識教育與演練使用的企業平台。本專案採用獨立的 runtime、schema 與程式碼，不收集真實密碼或登入憑證。
 
-目前版本為 `0.6.0 Local Pilot`。軟體功能已形成完整閉環；可先用本機 pickup 驗證，客戶 SMTP、DNS、TLS、服務帳號、報表 runtime 與備份位置保留為部署時的一次性設定。
+目前版本為 `0.7.0 SaaS tenant-cell foundation`。既有 Local Pilot 已形成完整閉環；新增宣告式 tenant registry、maker-checker、隔離資料根目錄、配額、無秘密部署計畫、容器基線與 CI。集中 OIDC、雲端郵件 adapter、真正控制面、managed data services、監控／DR 與法遵核准仍是 Production Gate，不應把 foundation 宣稱為已正式上線。
 
 ## 已建置功能
+
+- SaaS 採「宣告式控制面 + tenant-isolated cell」：每個 tenant 獨立 database、vault、報表、pickup 與備份，不以共享 schema 加 `tenant_id` 取代隔離。
+- Tenant manifest 具穩定 schema、申請／核准雙人覆核、精確網域、OIDC／delivery secret reference、保存期限與配額；跨 tenant 衝突會被拒絕。
+- `saas_tenant_cell` 啟動時驗證 manifest digest、HTTPS／Host／Origin、安全秘密注入與所有資料路徑；任何缺漏都 fail closed。
 
 - 一次性初始化碼、scrypt 密碼、強制初始密碼變更、登入節流、伺服器端 session、CSRF、Host／Origin 防護與帳號停用／session 撤銷。
 - `system_admin`、`campaign_creator`、`reviewer`、`report_viewer` 四種角色；讀取與異動 API 都在伺服器端檢查權限。
@@ -42,6 +46,27 @@ npm run verify
 
 開啟 `http://127.0.0.1:4280`，輸入終端機顯示的初始化碼建立首位管理員。
 
+## SaaS Tenant 計畫
+
+先以 `.example` 範例驗證 schema：
+
+```powershell
+npm run saas:validate
+```
+
+經不同人核准正式 registry 後，產生不含秘密值的部署計畫：
+
+```powershell
+npm run build
+node scripts/plan-saas-tenant.mjs `
+  --registry C:\SecureConfig\saas-tenants.json `
+  --tenant tenant-customer-001 `
+  --data-root D:\SecurityAwareness\Tenants `
+  --output .local-data\plans\tenant-customer-001.json
+```
+
+需要先申請的公司、DNS、IdP、郵件、KMS、監控、個資與選配計費資料，見 [SaaS 上線前申請資料](docs/SAAS_APPLICATION_REQUIREMENTS.md)。不要把 secret value 寫入 registry 或 Git。
+
 ## 建議本機驗收流程
 
 1. 系統管理員設定內部收件網域、核准寄件網域與 allowlist 測試信箱。
@@ -67,6 +92,7 @@ npm run verify
 ```powershell
 $env:SEA_ARTIFACT_TOOL_MODULE = 'D:\ApprovedRuntime\artifact_tool.mjs'
 npm run verify
+npm run verify:ci
 npm audit --audit-level=moderate
 node scripts/check-database.mjs .local-data/platform.sqlite
 node scripts/maintenance.mjs --database .local-data/platform.sqlite --reports .local-data/reports --pickup .local-data/pickup --logs .local-data
@@ -75,6 +101,9 @@ node scripts/maintenance.mjs --database .local-data/platform.sqlite --reports .l
 完整說明：
 
 - [架構與信任邊界](docs/ARCHITECTURE.md)
+- [SaaS 架構與隔離模型](docs/SAAS_ARCHITECTURE.md)
+- [SaaS 上線前申請資料](docs/SAAS_APPLICATION_REQUIREMENTS.md)
+- [SaaS Tenant Cell 維運](docs/SAAS_OPERATIONS.md)
 - [功能驗收矩陣](docs/PHASE_ROADMAP.md)
 - [客戶一次性設定](docs/CUSTOMER_ONE_TIME_SETUP.md)
 - [安全基線](docs/SECURITY_BASELINE.md)

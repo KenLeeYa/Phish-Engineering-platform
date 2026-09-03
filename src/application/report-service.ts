@@ -218,6 +218,7 @@ export class ReportService {
     private readonly reportStore: ReportStore,
     private readonly spreadsheets: SpreadsheetRuntime,
     private readonly reportDirectory: string,
+    private readonly maxArtifacts = 3_000,
   ) {}
 
   async generateCampaignReport(user: PublicUser, campaignId: string) {
@@ -362,7 +363,7 @@ export class ReportService {
     analysis: ReportAnalysis,
     owner: { campaignId: string | null; externalJobId: string | null },
   ) {
-    if (this.reportStore.totalArtifactCount() >= 3_000) {
+    if (this.reportStore.totalArtifactCount() + 3 > this.maxArtifacts) {
       throw new AppError(507, "REPORT_STORAGE_LIMIT", "報表保留量已達上限，請先執行保存期限維護。");
     }
     const jobId = owner.campaignId ?? owner.externalJobId ?? crypto.randomUUID();
@@ -651,7 +652,7 @@ export class ReportService {
     }
 
     const document = new Document({
-      creator: "Local Awareness Platform",
+      creator: "Enterprise Security Awareness Platform",
       title: `${analysis.campaignName}結果報告`,
       subject: "授權型社交工程郵件演練結果",
       description: "聚合報告，不包含逐人敏感明細。",

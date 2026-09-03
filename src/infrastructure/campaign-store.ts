@@ -336,6 +336,27 @@ export class CampaignStore {
       .map(mapCampaign);
   }
 
+  activeCampaignCount(): number {
+    const row = this.database
+      .prepare("SELECT COUNT(*) AS count FROM campaigns WHERE status NOT IN ('completed', 'cancelled')")
+      .get() as { count: number };
+    return Number(row.count);
+  }
+
+  committedDeliveryCountBetween(startInclusive: string, endExclusive: string): number {
+    const row = this.database
+      .prepare(`
+        SELECT COUNT(ct.id) AS count
+        FROM campaign_targets ct
+        JOIN campaigns c ON c.id = ct.campaign_id
+        WHERE c.status != 'cancelled'
+          AND c.scheduled_at >= ?
+          AND c.scheduled_at < ?
+      `)
+      .get(startInclusive, endExclusive) as { count: number };
+    return Number(row.count);
+  }
+
   createCampaign(input: {
     id: string;
     name: string;
